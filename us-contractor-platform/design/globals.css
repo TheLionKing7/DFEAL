@@ -1,0 +1,32 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Copy into app/globals.css in new Next.js project */
+:root {
+  --background: #f7f6f3;
+  --surface: #ffffff;
+  --sidebar: #0f2744;
+  --sidebar-muted: #94a3b8;
+  --border: #e2e8f0;
+  --gold: #c9a84c;
+  --success: #059669;
+  --error: #dc2626;
+  --text: #1a2332;
+  --muted: #64748b;
+}
+
+body {
+  background: var(--background);
+  color: var(--text);
+}
+
+@layer utilities {
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+  .hover-surface {
+    @apply transition-colors hover:bg-black/[0.04];
+  }
+}

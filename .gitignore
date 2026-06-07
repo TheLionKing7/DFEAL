@@ -1,0 +1,25 @@
+# Secrets — never commit
+.env
+.env.local
+.env*.local
+**/dfeal-profile.ts
+dfeal-profile.ts
+config/dfeal-profile.ts
+
+# Dependencies & build
+node_modules/
+.next/
+out/
+build/
+.vercel/
+
+# Local extract artifacts (source docs stay in dfeal_.zip locally if needed)
+_dfeal_extract/
+_extract_log.txt
+
+# OS
+.DS_Store
+*.pem
+
+# TypeScript
+*.tsbuildinfo

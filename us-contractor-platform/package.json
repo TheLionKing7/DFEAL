@@ -1,0 +1,12 @@
+{
+  "name": "@transfer/us-contractor-platform",
+  "private": true,
+  "description": "Transfer pack — not a runnable package. Copy into greenfield Next.js repo.",
+  "peerDependencies": {
+    "next": ">=14",
+    "react": ">=18",
+    "react-dom": ">=18",
+    "clsx": "^2",
+    "tailwind-merge": "^2"
+  }
+}

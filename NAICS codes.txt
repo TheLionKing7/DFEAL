@@ -1,0 +1,10 @@
+NAICS Code	Industry Title
+541611	Administrative Management and General Management Consulting Services
+541618	Other Management Consulting Services
+541714	Research and Development in Biotechnology (except Nanobiotechnology)
+541512	Computer Systems Design Services
+561320	Temporary Help Services
+423450	Medical, Dental, and Hospital Equipment and Supplies Merchant Wholesalers
+
+Primary: 541611
+Source: DFEAL capability statements (dfeal_.zip) + SAM.gov registration
