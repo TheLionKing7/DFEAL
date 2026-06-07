@@ -2,9 +2,6 @@
 .env
 .env.local
 .env*.local
-**/dfeal-profile.ts
-dfeal-profile.ts
-config/dfeal-profile.ts
 
 # Dependencies & build
 node_modules/
