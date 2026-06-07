@@ -11,7 +11,7 @@ export interface SamIngestResult {
 }
 
 export async function ingestSamOpportunities(
-  daysBack = 7,
+  daysBack = 30,
 ): Promise<SamIngestResult> {
   await updateIngestCursor("sam", {
     last_status: "running",

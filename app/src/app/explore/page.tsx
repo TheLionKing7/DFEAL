@@ -8,6 +8,9 @@ import { createSamGovClient } from "@/lib/sam-gov/client";
 import { normalizeSamOpportunity } from "@/lib/sam-gov/normalize";
 import { getDfealNaicsCodes } from "@/config/dfeal-profile";
 
+/** Always read fresh rows from Supabase (not build-time cache). */
+export const dynamic = "force-dynamic";
+
 async function loadExploreData() {
   if (isDatabaseConfigured()) {
     try {
@@ -84,13 +87,13 @@ export default async function ExplorePage() {
 
       {items.length === 0 && !error && (
         <div className="mt-8 rounded-xl border border-border bg-bg-surface p-6 text-sm text-text-muted">
-          <p>No opportunities in the database yet.</p>
-          <p className="mt-2">
-            Trigger ingest via cron-job.org:
-            <code className="ml-1 rounded bg-black/5 px-1.5 py-0.5">
-              POST /api/cron/daily-opportunities
-            </code>
-          </p>
+          <p className="font-medium text-text">No opportunities in the database yet.</p>
+          <p className="mt-2">Run the daily ingest once (cron-job.org or PowerShell below). After success, refresh this page.</p>
+          <ol className="mt-3 list-inside list-decimal space-y-1">
+            <li>Vercel → Settings → Environment Variables → set <code className="rounded bg-black/5 px-1">CRON_SECRET</code>, then redeploy</li>
+            <li>cron-job.org → POST <code className="rounded bg-black/5 px-1">/api/cron/daily-opportunities</code> with header <code className="rounded bg-black/5 px-1">Authorization: Bearer …</code></li>
+            <li>Or locally: <code className="rounded bg-black/5 px-1">npm run ingest</code> in the <code className="rounded bg-black/5 px-1">app</code> folder</li>
+          </ol>
         </div>
       )}
 

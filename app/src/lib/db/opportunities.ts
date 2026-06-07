@@ -13,16 +13,22 @@ export async function upsertOpportunities(
 
   const supabase = getSupabaseAdmin();
   const rows = opportunities.map(opportunityToDbRow);
+  const chunkSize = 25;
+  let upserted = 0;
 
-  const { error } = await supabase.from("opportunities").upsert(rows, {
-    onConflict: "source,external_id",
-  });
+  for (let i = 0; i < rows.length; i += chunkSize) {
+    const chunk = rows.slice(i, i + chunkSize);
+    const { error } = await supabase.from("opportunities").upsert(chunk, {
+      onConflict: "source,external_id",
+    });
 
-  if (error) {
-    throw new Error(`Failed to upsert opportunities: ${error.message}`);
+    if (error) {
+      throw new Error(`Failed to upsert opportunities: ${error.message}`);
+    }
+    upserted += chunk.length;
   }
 
-  return rows.length;
+  return upserted;
 }
 
 export async function listOpportunities(options: {

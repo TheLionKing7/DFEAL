@@ -19,7 +19,7 @@ export async function runDailyPipeline(): Promise<DailyPipelineResult> {
   const digestId = await createDigestRun();
 
   try {
-    const ingest = await ingestSamOpportunities(7);
+    const ingest = await ingestSamOpportunities(30);
     const unscoredIds = await listUnscoredOpportunityIds(200);
     const scores = [];
     let hotCount = 0;
