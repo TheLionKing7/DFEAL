@@ -5,6 +5,7 @@ import {
   RecommendedSection,
   RelevantVendorsSection,
 } from "@/components/explore/ExploreSections";
+import { PageShell } from "@/components/layout/PageShell";
 import { SMART_CAPTURE, TENANT } from "@/config/platform";
 import { loadExplorePageData } from "@/lib/db/explore-data";
 import { isDatabaseConfigured } from "@/lib/db/supabase-admin";
@@ -33,32 +34,30 @@ export default async function ExplorePage() {
   }
 
   return (
-    <div className="-mx-4 -mt-4 min-h-full bg-gradient-to-b from-sidebar via-[#12243d] to-[#0a1628] px-4 py-6 lg:-mx-6 lg:px-6">
-      <div className="mx-auto max-w-6xl space-y-8">
-        <div>
-          <p className="text-sm font-medium text-gold">{SMART_CAPTURE.tagline}</p>
-          <h1 className="mt-1 text-2xl font-bold text-white">Explore</h1>
-          <p className="mt-1 text-sm text-sidebar-muted">
-            Contract intelligence for {TENANT.legalName} — powered by {SMART_CAPTURE.name}.
-          </p>
-        </div>
-
-        {error && (
-          <p className="rounded-lg border border-error/30 bg-error/10 px-4 py-3 text-sm text-red-200">
-            {error}
-          </p>
-        )}
-
-        <ExploreHero items={featured} />
-
-        <RecommendedSection items={recommended} />
-
-        <PopularSection lanes={popularLanes} />
-
-        <RelevantVendorsSection />
-
-        <IndustryEventsSection items={industryEvents} />
+    <PageShell className="space-y-8">
+      <div>
+        <p className="text-sm font-medium text-gold">{SMART_CAPTURE.tagline}</p>
+        <h1 className="mt-1 text-2xl font-bold text-text">Explore</h1>
+        <p className="mt-1 text-sm text-text-muted">
+          Contract intelligence for {TENANT.legalName} — powered by {SMART_CAPTURE.name}.
+        </p>
       </div>
-    </div>
+
+      {error && (
+        <p className="rounded-lg border border-error/30 bg-error/5 px-4 py-3 text-sm text-error">
+          {error}
+        </p>
+      )}
+
+      <ExploreHero items={featured} />
+
+      <RecommendedSection items={recommended} />
+
+      <PopularSection lanes={popularLanes} />
+
+      <RelevantVendorsSection />
+
+      <IndustryEventsSection items={industryEvents} />
+    </PageShell>
   );
 }

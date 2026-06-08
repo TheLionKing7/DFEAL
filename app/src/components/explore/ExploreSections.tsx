@@ -11,7 +11,7 @@ export function RecommendedSection({ items }: { items: OpportunityCardData[] }) 
   return (
     <section className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-white">Recommended For You</h2>
+        <h2 className="text-xl font-bold text-text">Recommended For You</h2>
         <Link
           href="/opportunities"
           className="text-sm font-medium text-gold hover:underline"
@@ -124,8 +124,8 @@ export function RelevantVendorsSection() {
     <section className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold text-white">Relevant Vendors</h2>
-          <p className="mt-1 text-sm text-sidebar-muted">
+          <h2 className="text-xl font-bold text-text">Relevant Vendors</h2>
+          <p className="mt-1 text-sm text-text-muted">
             Teaming partners and subcontractors across your capture jurisdictions.
           </p>
         </div>
@@ -140,23 +140,30 @@ export function RelevantVendorsSection() {
         {jurisdictions.map((j) => (
           <div
             key={j.id}
-            className="rounded-xl border border-white/10 bg-sidebar-surface/80 p-5 backdrop-blur-sm"
+            className="rounded-xl border border-border bg-bg-surface p-5 shadow-sm"
           >
-            <h3 className="text-sm font-semibold text-gold">{j.label}</h3>
-            <ul className="mt-3 space-y-3">
+            <h3 className="text-sm font-semibold text-sidebar">{j.label}</h3>
+            <ul className="mt-3 space-y-2">
               {j.vendors.map((v) => (
-                <li key={v.name} className="border-b border-white/5 pb-3 last:border-0 last:pb-0">
-                  <p className="text-sm font-medium text-white">{v.name}</p>
-                  <p className="mt-0.5 text-xs text-sidebar-muted">{v.specialty}</p>
-                  {v.location && (
-                    <p className="mt-0.5 text-[10px] uppercase tracking-wide text-sidebar-muted/80">
-                      {v.location}
+                <li key={v.slug}>
+                  <Link
+                    href={`/participants/vendors?vendor=${v.slug}`}
+                    className="block rounded-lg border border-transparent px-3 py-2.5 transition hover:border-gold/30 hover:bg-black/[0.03] active:bg-black/[0.05]"
+                  >
+                    <p className="text-sm font-medium text-text group-hover:text-gold">
+                      {v.name}
                     </p>
-                  )}
+                    <p className="mt-0.5 text-xs text-text-muted">{v.specialty}</p>
+                    {v.location && (
+                      <p className="mt-0.5 text-[10px] uppercase tracking-wide text-text-muted">
+                        {v.location}
+                      </p>
+                    )}
+                  </Link>
                 </li>
               ))}
               {j.vendors.length === 0 && (
-                <li className="text-sm text-sidebar-muted">No vendors configured yet.</li>
+                <li className="text-sm text-text-muted">No vendors configured yet.</li>
               )}
             </ul>
           </div>
@@ -172,8 +179,8 @@ export function IndustryEventsSection({ items }: { items: OpportunityCardData[] 
   return (
     <section className="space-y-4">
       <div>
-        <h2 className="text-xl font-bold text-white">Industry Events & Invitations</h2>
-        <p className="mt-1 text-sm text-sidebar-muted">
+        <h2 className="text-xl font-bold text-text">Industry Events & Invitations</h2>
+        <p className="mt-1 text-sm text-text-muted">
           Informational events and conferences — not scored as contract opportunities.
         </p>
       </div>
@@ -181,19 +188,19 @@ export function IndustryEventsSection({ items }: { items: OpportunityCardData[] 
         {items.map((opp) => (
           <article
             key={opp.id}
-            className="rounded-xl border border-dashed border-white/15 bg-sidebar-surface/50 p-4"
+            className="rounded-xl border border-dashed border-border bg-bg-surface p-4"
           >
-            <span className="rounded bg-white/10 px-2 py-0.5 text-xs font-medium text-white/90">
+            <span className="rounded bg-sidebar/10 px-2 py-0.5 text-xs font-medium text-sidebar">
               {opp.category_label ?? "Event"}
             </span>
-            <h3 className="mt-2 font-medium leading-snug text-white">
+            <h3 className="mt-2 font-medium leading-snug text-text">
               <Link href={`/opportunities/${opp.id}`} className="hover:text-gold">
                 {opp.title}
               </Link>
             </h3>
-            <p className="mt-1 text-sm text-sidebar-muted">{opp.agency_name ?? "Agency TBD"}</p>
+            <p className="mt-1 text-sm text-text-muted">{opp.agency_name ?? "Agency TBD"}</p>
             {opp.response_deadline && (
-              <p className="mt-1 text-xs text-sidebar-muted">
+              <p className="mt-1 text-xs text-text-muted">
                 {new Date(opp.response_deadline).toLocaleDateString()}
               </p>
             )}
