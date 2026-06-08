@@ -21,7 +21,8 @@ export async function ingestSamOpportunities(
   try {
     const client = createSamGovClient();
     const naicsCodes = getDfealNaicsCodes();
-    const seen = new Set<string>();
+    const seenNoticeIds = new Set<string>();
+    const seenSourceUrls = new Set<string>();
     const merged: Opportunity[] = [];
 
     const postedTo = new Date();
@@ -39,8 +40,11 @@ export async function ingestSamOpportunities(
       });
 
       for (const raw of rows) {
-        if (seen.has(raw.noticeId)) continue;
-        seen.add(raw.noticeId);
+        if (seenNoticeIds.has(raw.noticeId)) continue;
+        const sourceUrl = raw.uiLink?.trim();
+        if (sourceUrl && seenSourceUrls.has(sourceUrl)) continue;
+        seenNoticeIds.add(raw.noticeId);
+        if (sourceUrl) seenSourceUrls.add(sourceUrl);
         merged.push(normalizeSamOpportunity(raw));
       }
     }

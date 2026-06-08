@@ -3,6 +3,7 @@ import {
 } from "@/lib/db/map-opportunity";
 import { getSupabaseAdmin } from "@/lib/db/supabase-admin";
 import { classifyOpportunity } from "@/lib/opportunity/classify";
+import { dedupeHotOpportunityRows, dedupeOpportunityCards } from "@/lib/opportunity/dedupe";
 import { scoreOpportunity } from "@/lib/scoring/score-opportunity";
 import type { OpportunityCardData } from "@/components/opportunity/OpportunityCard";
 
@@ -77,7 +78,9 @@ export async function loadExplorePageData() {
 
   if (hotError) throw new Error(hotError.message);
 
-  const hot = (hotRows ?? [])
+  const dedupedHotRows = dedupeHotOpportunityRows(hotRows ?? []);
+
+  const hot = dedupedHotRows
     .map((row) => {
       const opp = dbRowToOpportunity(row);
       return toCard(opp, {
@@ -99,12 +102,15 @@ export async function loadExplorePageData() {
 
   const recent = (recentRows ?? []).map((row) => toCard(dbRowToOpportunity(row)));
 
-  const contracts = recent.filter((c) => c.category === "contract_opportunity");
+  const contracts = dedupeOpportunityCards(
+    recent.filter((c) => c.category === "contract_opportunity"),
+  );
   const events = recent.filter((c) => c.category === "industry_event");
 
-  const recommended = (hot.length > 0 ? hot : contracts)
-    .sort((a, b) => (b.fit_score ?? 0) - (a.fit_score ?? 0))
-    .slice(0, 8);
+  const recommended = dedupeOpportunityCards(
+    (hot.length > 0 ? hot : contracts)
+      .sort((a, b) => (b.fit_score ?? 0) - (a.fit_score ?? 0)),
+  ).slice(0, 8);
 
   const featured = recommended.slice(0, 5);
 
@@ -117,23 +123,26 @@ export async function loadExplorePageData() {
 
   const contractRows = withSource.filter((r) => r.card.category === "contract_opportunity");
 
-  const federalItems = contractRows
-    .filter((r) => isFederal(r.id, r.source))
-    .map((r) => r.card)
-    .sort((a, b) => (b.fit_score ?? 0) - (a.fit_score ?? 0))
-    .slice(0, 4);
+  const federalItems = dedupeOpportunityCards(
+    contractRows
+      .filter((r) => isFederal(r.id, r.source))
+      .map((r) => r.card)
+      .sort((a, b) => (b.fit_score ?? 0) - (a.fit_score ?? 0)),
+  ).slice(0, 4);
 
-  const stateLocalItems = contractRows
-    .filter((r) => isStateLocal(r.id, r.source))
-    .map((r) => r.card)
-    .sort((a, b) => (b.fit_score ?? 0) - (a.fit_score ?? 0))
-    .slice(0, 4);
+  const stateLocalItems = dedupeOpportunityCards(
+    contractRows
+      .filter((r) => isStateLocal(r.id, r.source))
+      .map((r) => r.card)
+      .sort((a, b) => (b.fit_score ?? 0) - (a.fit_score ?? 0)),
+  ).slice(0, 4);
 
-  const grantItems = contractRows
-    .filter((r) => isGrant(r.source, r.raw))
-    .map((r) => r.card)
-    .sort((a, b) => (b.fit_score ?? 0) - (a.fit_score ?? 0))
-    .slice(0, 4);
+  const grantItems = dedupeOpportunityCards(
+    contractRows
+      .filter((r) => isGrant(r.source, r.raw))
+      .map((r) => r.card)
+      .sort((a, b) => (b.fit_score ?? 0) - (a.fit_score ?? 0)),
+  ).slice(0, 4);
 
   const popularLanes: ExploreLane[] = [
     {

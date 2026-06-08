@@ -71,7 +71,7 @@ function normalizeGeorgiaRow(row: GeorgiaEventRow): Opportunity {
       : "solicitation",
     title: row.title,
     description: row.esourceDescription ?? null,
-    agency_id: row.agencyCode ?? null,
+    agency_id: null,
     agency_name: row.agencyName,
     naics: null,
     psc: null,

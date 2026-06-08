@@ -5,6 +5,7 @@ import {
   opportunityToDbRow,
 } from "@/lib/db/map-opportunity";
 import { isContractOpportunity } from "@/lib/opportunity/classify";
+import { dedupeHotOpportunityRows } from "@/lib/opportunity/dedupe";
 import type { Opportunity } from "@/shared/types/opportunity";
 
 export async function upsertOpportunities(
@@ -97,7 +98,7 @@ export async function listHotOpportunities(limit = 12) {
     .limit(limit);
 
   if (error) throw new Error(error.message);
-  return (data ?? [])
+  return dedupeHotOpportunityRows(data ?? [])
     .map(hotRowToDisplay)
     .filter((opp) => isContractOpportunity(opp));
 }
