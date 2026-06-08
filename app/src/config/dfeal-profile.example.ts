@@ -53,6 +53,8 @@ export interface DfealProfile {
 }
 
 /** Replace placeholders before use. */
+export const DFEAL_HOME_STATE = "IL";
+
 export const DFEAL_PROFILE: DfealProfile = {
   legalName: "DFEAL LLC",
   uei: "G1XCPA2ANMC3",
@@ -86,7 +88,7 @@ export const DFEAL_PROFILE: DfealProfile = {
     excludedAgencies: [],
     requiredCertifications: [],
     minDaysToDeadline: 5,
-    geographicFocus: ["Federal", "Illinois", "Delaware", "Ohio", "Georgia"],
+    geographicFocus: ["Illinois", "Federal", "Delaware", "Ohio", "Georgia"],
   },
   productName: "DFEAL Capture",
   tagline: "AI-Powered Government Contract Intelligence",

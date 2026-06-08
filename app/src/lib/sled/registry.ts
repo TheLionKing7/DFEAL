@@ -6,11 +6,12 @@ import { fetchOhioOpportunities, OHIO_CONNECTOR_META } from "@/lib/sled/ohio";
 import type { OpportunityLaneId } from "@/shared/opportunity-lanes";
 import type { SledConnector, SledConnectorMeta, SledSource } from "@/lib/sled/types";
 
+/** Illinois (home state) is listed first for ingest priority */
 export const SLED_CONNECTORS: SledConnector[] = [
+  { meta: BIDBUY_IL_CONNECTOR_META, fetch: fetchBidBuyIllinoisOpportunities },
   { meta: GEORGIA_CONNECTOR_META, fetch: fetchGeorgiaOpportunities },
   { meta: OHIO_CONNECTOR_META, fetch: fetchOhioOpportunities },
   { meta: DEMANDSTAR_CONNECTOR_META, fetch: fetchDemandStarOpportunities },
-  { meta: BIDBUY_IL_CONNECTOR_META, fetch: fetchBidBuyIllinoisOpportunities },
   { meta: BONFIRE_CONNECTOR_META, fetch: fetchBonfireOpportunities },
 ];
 
@@ -20,12 +21,14 @@ export function getSledConnector(source: SledSource): SledConnector | undefined 
 
 export function laneToSledSources(lane: OpportunityLaneId): SledSource[] {
   switch (lane) {
+    case "illinois":
+      return ["bidbuy_il"];
     case "ohio":
       return ["ohio"];
     case "georgia":
       return ["georgia"];
     case "state":
-      return ["demandstar", "bidbuy_il", "ohio"];
+      return ["bidbuy_il", "demandstar", "ohio"];
     case "local":
       return ["bonfire", "demandstar"];
     case "education":

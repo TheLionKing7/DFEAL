@@ -55,7 +55,7 @@ export async function ingestSledOpportunities(options?: {
   sources?: SledSource[];
   daysBack?: number;
 }): Promise<SledIngestResult> {
-  const sources = options?.sources ?? (["georgia"] as SledSource[]);
+  const sources = options?.sources ?? (["bidbuy_il", "georgia"] as SledSource[]);
   const daysBack = options?.daysBack ?? 30;
   const out: SledIngestResult = {
     sources: {},

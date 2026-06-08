@@ -1,5 +1,6 @@
 import type { Opportunity } from "@/shared/types/opportunity";
 import {
+  DFEAL_HOME_STATE,
   getDfealNaicsCodes,
   getDfealScoringCriteria,
 } from "@/config/dfeal-profile";
@@ -28,11 +29,24 @@ function matchesSetAside(setAside: string | null, preferred: string[]): boolean 
   });
 }
 
+function isIllinoisOpportunity(opp: Opportunity): boolean {
+  if (opp.source === "bidbuy_il") return true;
+  const state = opp.place_of_performance?.state?.toUpperCase();
+  if (state === DFEAL_HOME_STATE) return true;
+  const agency = (opp.agency_name ?? "").toLowerCase();
+  return agency.includes("illinois") || /\bIL\b/.test(opp.title);
+}
+
 export function scoreOpportunity(opp: Opportunity): ScoreResult {
   const criteria = getDfealScoringCriteria();
   const dfealNaics = new Set(getDfealNaicsCodes());
   const reasons: string[] = [];
   let score = 0;
+
+  if (isIllinoisOpportunity(opp)) {
+    score += 20;
+    reasons.push(`Illinois home-state priority (${DFEAL_HOME_STATE})`);
+  }
 
   if (opp.naics && dfealNaics.has(opp.naics)) {
     score += 40;
@@ -40,6 +54,9 @@ export function scoreOpportunity(opp: Opportunity): ScoreResult {
   } else if (opp.naics) {
     score += 10;
     reasons.push(`NAICS ${opp.naics} is adjacent — verify fit`);
+  } else if (opp.source === "bidbuy_il") {
+    score += 15;
+    reasons.push("Illinois state bid — verify NAICS fit in solicitation");
   } else {
     reasons.push("NAICS not listed on notice");
   }

@@ -48,6 +48,9 @@ export interface DfealProfile {
   address: string;
 }
 
+/** DFEAL operates from Illinois — home state gets capture priority in scoring and ingest */
+export const DFEAL_HOME_STATE = "IL";
+
 export const DFEAL_PROFILE: DfealProfile = {
   legalName: "DFEAL LLC",
   uei: "G1XCPA2ANMC3",
@@ -145,8 +148,8 @@ DFEAL also delivers R&D, Health IT (AI/ML-powered systems), scientific and techn
     requiredCertifications: [],
     minDaysToDeadline: 5,
     geographicFocus: [
-      "Federal",
       "Illinois",
+      "Federal",
       "Delaware",
       "Ohio",
       "Georgia",
@@ -170,6 +173,7 @@ export function buildDfealSystemPrompt(): string {
     `Core competencies: ${p.coreCompetencies.join("; ")}.`,
     `Differentiators: ${p.differentiators.join("; ")}.`,
     `Go/no-go rules: minimum contract value $${p.goNoGo.minContractValueUsd?.toLocaleString() ?? "n/a"}; preferred set-asides: ${p.goNoGo.preferredSetAsides.join(", ")}; require at least ${p.goNoGo.minDaysToDeadline} days until response deadline.`,
+    `Geographic priority: ${p.goNoGo.geographicFocus.join(", ")} (Illinois is DFEAL home state — prioritize IL/BidBuy opportunities in capture recommendations).`,
     `Capability statement:\n${p.capabilityStatement}`,
     p.pastPerformance.length
       ? `Past performance:\n${p.pastPerformance.map((pp) => `- ${pp.agency} — ${pp.scope}`).join("\n")}`

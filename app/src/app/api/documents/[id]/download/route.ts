@@ -3,6 +3,7 @@ import { requireApiUser } from "@/lib/auth/api-user";
 import { getDocument } from "@/lib/db/documents";
 import { getOpportunityById } from "@/lib/db/opportunities";
 import { renderProposalPdf } from "@/lib/export/render-proposal-pdf";
+import { getDocumentTypeLabel } from "@/shared/document-types";
 import { isDatabaseConfigured } from "@/lib/db/supabase-admin";
 
 export const maxDuration = 60;
@@ -37,7 +38,7 @@ export async function GET(
     title: document.title ?? "Proposal Section",
     opportunityTitle: opp?.title,
     agency: opp?.agency_name ?? undefined,
-    documentType: document.document_type.replace(/_/g, " "),
+    documentType: getDocumentTypeLabel(document.document_type),
   });
 
   return new NextResponse(new Uint8Array(buffer), {

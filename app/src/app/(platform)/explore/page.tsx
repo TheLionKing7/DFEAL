@@ -75,7 +75,7 @@ export default async function ExplorePage() {
         title="Explore"
         description={
           mode === "hot"
-            ? "Hot opportunities scored against the DFEAL profile."
+            ? "Hot opportunities scored against the DFEAL profile — Illinois home-state bids are prioritized."
             : mode === "all"
               ? "Latest opportunities — run daily cron to populate scores."
               : mode === "live"

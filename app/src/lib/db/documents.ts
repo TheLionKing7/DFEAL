@@ -1,5 +1,5 @@
 import { getSupabaseAdmin } from "@/lib/db/supabase-admin";
-import type { DocumentType } from "@/shared/opportunity-lanes";
+import type { DocumentType } from "@/shared/document-types";
 
 export interface GeneratedDocument {
   id: string;

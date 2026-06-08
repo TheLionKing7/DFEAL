@@ -3,6 +3,7 @@ export type OpportunityLaneId =
   | "state"
   | "local"
   | "education"
+  | "illinois"
   | "ohio"
   | "georgia"
   | "grants";
@@ -28,6 +29,15 @@ export const OPPORTUNITY_LANES: OpportunityLane[] = [
     source: "sam",
     marketTier: "federal",
     phase: 1,
+  },
+  {
+    id: "illinois",
+    label: "Illinois (home)",
+    href: "/opportunities?lane=illinois",
+    description: "BidBuy Illinois — DFEAL home state priority",
+    source: "bidbuy_il",
+    marketTier: "state",
+    phase: 3,
   },
   {
     id: "state",
@@ -105,12 +115,5 @@ export const PURSUIT_STAGES = [
 
 export type PursuitStage = (typeof PURSUIT_STAGES)[number]["id"];
 
-export const DOCUMENT_TYPES = [
-  { id: "executive_summary", label: "Executive summary" },
-  { id: "technical_approach", label: "Technical approach" },
-  { id: "past_performance", label: "Past performance" },
-  { id: "management_plan", label: "Management plan" },
-  { id: "cover_letter", label: "Cover letter" },
-] as const;
-
-export type DocumentType = (typeof DOCUMENT_TYPES)[number]["id"];
+/** @deprecated Import from @/shared/document-types */
+export { DOCUMENT_TYPES, type DocumentType } from "@/shared/document-types";

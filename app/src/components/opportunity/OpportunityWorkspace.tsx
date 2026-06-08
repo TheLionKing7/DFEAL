@@ -3,15 +3,12 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { Breadcrumb, PageShell, Panel } from "@/components/layout/PageShell";
+import { DocumentGeneratorPanel } from "@/components/opportunity/DocumentGeneratorPanel";
 import { OpportunityContractStrip } from "@/components/opportunity/OpportunityContractStrip";
 import { WorkspaceTabs, type WorkspaceTab } from "@/components/opportunity/WorkspaceTabs";
 import { enrichOpportunityDetails } from "@/lib/opportunity/enrich";
-import {
-  DOCUMENT_TYPES,
-  PURSUIT_STAGES,
-  type DocumentType,
-  type PursuitStage,
-} from "@/shared/opportunity-lanes";
+import { PURSUIT_STAGES, type PursuitStage } from "@/shared/opportunity-lanes";
+import { type DocumentType } from "@/shared/document-types";
 import { cn } from "@/shared/cn";
 import type { Opportunity } from "@/shared/types/opportunity";
 
@@ -105,6 +102,18 @@ export function OpportunityWorkspace({
   );
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [primaryDocType, setPrimaryDocType] = useState<DocumentType>("contract_proposal");
+
+  useEffect(() => {
+    void fetch(`/api/documents/recommend?opportunity_id=${opportunity.id}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.primary?.document_type) {
+          setPrimaryDocType(data.primary.document_type as DocumentType);
+        }
+      })
+      .catch(() => undefined);
+  }, [opportunity.id, opportunity.notice_type]);
 
   const loadOverview = useCallback(async (force = false) => {
     if (!force && overview) return;
@@ -311,7 +320,7 @@ export function OpportunityWorkspace({
             type="button"
             onClick={() => {
               setTab("documents");
-              void generateDocument("executive_summary");
+              void generateDocument(primaryDocType);
             }}
             disabled={loading?.startsWith("doc-")}
             className={btnSecondary}
@@ -515,72 +524,18 @@ export function OpportunityWorkspace({
       )}
 
       {tab === "documents" && (
-        <div className="grid gap-4 lg:grid-cols-2">
-          <Panel title="Generate proposal sections">
-            <p className="mb-4 text-sm text-text-muted">
-              AI drafts use the DFEAL profile, overview summary, and solicitation context.
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {DOCUMENT_TYPES.map((dt) => (
-                <button
-                  key={dt.id}
-                  type="button"
-                  onClick={() => void generateDocument(dt.id)}
-                  disabled={loading === `doc-${dt.id}`}
-                  className={btnSecondary}
-                >
-                  {loading === `doc-${dt.id}` ? "Generating…" : dt.label}
-                </button>
-              ))}
-            </div>
-            {docList.length > 0 && (
-              <ul className="mt-4 space-y-2 border-t border-border pt-4 text-sm">
-                {docList.map((doc) => (
-                  <li key={doc.id}>
-                    <button
-                      type="button"
-                      onClick={() => void loadDocument(doc.id)}
-                      className="text-left font-medium text-gold hover:underline"
-                    >
-                      {doc.title ?? doc.document_type}
-                    </button>
-                    <span className="ml-2 text-xs text-text-muted">
-                      {new Date(doc.created_at).toLocaleDateString()}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Panel>
-          <Panel title="Document preview">
-            {selectedDoc?.content ? (
-              <>
-                <div className="mb-3 flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    className={btnSecondary}
-                    onClick={() => navigator.clipboard.writeText(selectedDoc.content)}
-                  >
-                    Copy
-                  </button>
-                  <a
-                    href={`/api/documents/${selectedDoc.id}/download?format=pdf`}
-                    className={btnPrimary}
-                  >
-                    Download PDF
-                  </a>
-                </div>
-                <pre className="max-h-[520px] overflow-auto whitespace-pre-wrap text-sm leading-relaxed text-text-muted">
-                  {selectedDoc.content}
-                </pre>
-              </>
-            ) : (
-              <p className="text-sm text-text-muted">
-                Select a section above or click <strong>Generate document</strong> in the header.
-              </p>
-            )}
-          </Panel>
-        </div>
+        <DocumentGeneratorPanel
+          opportunityId={opportunity.id}
+          noticeType={opportunity.notice_type}
+          docList={docList}
+          selectedDoc={selectedDoc}
+          loading={loading}
+          onGenerate={(type) => void generateDocument(type)}
+          onLoadDocument={(id) => void loadDocument(id)}
+          onCopy={() => {
+            if (selectedDoc?.content) void navigator.clipboard.writeText(selectedDoc.content);
+          }}
+        />
       )}
 
       {tab === "compliance" && (

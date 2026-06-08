@@ -1,28 +1,27 @@
 import { buildDfealSystemPrompt, DFEAL_PROFILE } from "@/config/dfeal-profile";
 import { llmComplete } from "@/lib/ai/complete";
 import { saveDocument } from "@/lib/db/documents";
-import type { DocumentType } from "@/shared/opportunity-lanes";
+import { getFilledTemplate } from "@/lib/documents/template-loader";
+import { getDocumentTypeLabel, type DocumentType } from "@/shared/document-types";
 import type { Opportunity } from "@/shared/types/opportunity";
 
-const SECTION_GUIDANCE: Record<DocumentType, string> = {
-  executive_summary:
-    "Write a compelling executive summary (1 page) as a senior capture specialist would. Lead with win themes and DFEAL differentiators. Use ## section headings.",
-  technical_approach:
-    "Write a technical approach section aligned to the SOW/PWS. Use ## and ### headings, numbered methodology steps, and clear deliverables language.",
-  past_performance:
-    "Write a past performance narrative citing DFEAL certifications and relevant NAICS experience. Include contract-style references and measurable outcomes.",
-  management_plan:
-    "Write a project management plan with staffing, QA, risk mitigation, and communication cadence. Use professional proposal tone with structured headings.",
-  cover_letter:
-    "Write a formal cover letter to the contracting officer. Business letter format with date block, salutation, body paragraphs, and professional close.",
+const MAX_TOKENS: Record<DocumentType, number> = {
+  capability_statement: 6500,
+  contract_proposal: 6000,
+  rfi_response: 4000,
+  sources_sought_response: 4000,
+  cta_proposal: 3500,
 };
 
-const FORMAT_RULES = [
-  "Write as a human federal proposal specialist — not generic AI filler.",
-  "Use clear markdown: # title, ## sections, ### subsections, bullet lists where appropriate.",
-  "Use active voice, specific agency/solicitation references, and compliance-aware language.",
-  "Avoid placeholders like [Company Name] — use DFEAL legal name and real profile details.",
-  "Target 800–1500 words unless the section type clearly needs less.",
+const DRAFTING_RULES = [
+  "Write as a senior federal proposal specialist for DFEAL LLC — human, precise, compliance-aware.",
+  "Follow the TEMPLATE STRUCTURE exactly: use the same section headings and order.",
+  "Populate every section with real DFEAL company data from the profile — never use placeholders.",
+  "Tailor win themes, technical approach, and past performance to this specific opportunity.",
+  "Use markdown: # document title, ## major sections, ### subsections, bullet lists.",
+  "Include UEI, CAGE, NAICS, certifications, and contact block where the template specifies.",
+  "For Capability Statement: deliver one cohesive document covering cover letter through management plan.",
+  "Output markdown only — no JSON, no code fences, no meta commentary.",
 ].join("\n");
 
 export async function generateProposalDocument(input: {
@@ -32,36 +31,43 @@ export async function generateProposalDocument(input: {
   analysisSummary?: string;
 }) {
   const { opp, documentType, userEmail, analysisSummary } = input;
-  const guidance = SECTION_GUIDANCE[documentType];
+  const templateOutline = getFilledTemplate(documentType, opp);
+  const label = getDocumentTypeLabel(documentType);
 
   const userPrompt = [
-    guidance,
+    `Draft a complete ${label} for ${DFEAL_PROFILE.legalName}.`,
     "",
-    `Opportunity: ${opp.title}`,
+    "TEMPLATE STRUCTURE (follow this outline and headings):",
+    templateOutline,
+    "",
+    "---",
+    "OPPORTUNITY CONTEXT",
+    `Title: ${opp.title}`,
     `Agency: ${opp.agency_name ?? "TBD"}`,
-    `NAICS: ${opp.naics ?? "TBD"} · Set-aside: ${opp.set_aside ?? "TBD"}`,
+    `Notice #: ${opp.external_id}`,
+    `Notice type: ${opp.notice_type}`,
+    `NAICS: ${opp.naics ?? DFEAL_PROFILE.primaryNaics}`,
+    `Set-aside: ${opp.set_aside ?? "Unrestricted"}`,
     `Response deadline: ${opp.response_deadline ?? "TBD"}`,
     analysisSummary ? `Capture analysis: ${analysisSummary}` : "",
     "",
-    "Description excerpt:",
-    opp.description?.slice(0, 3000) ?? "(No description available)",
+    "Solicitation excerpt:",
+    opp.description?.slice(0, 4000) ?? "(No description available — use agency and title context)",
     "",
-    `Write in professional proposal voice for ${DFEAL_PROFILE.legalName}.`,
+    "DRAFTING RULES:",
+    DRAFTING_RULES,
     "",
-    "Formatting requirements:",
-    FORMAT_RULES,
-    "",
-    "Output markdown only — no JSON wrapper, no code fences.",
+    `Produce the full ${label} now.`,
   ]
     .filter(Boolean)
     .join("\n");
 
   const { text, provider } = await llmComplete({
     userPrompt: `${buildDfealSystemPrompt()}\n\n${userPrompt}`,
-    maxTokens: 3500,
+    maxTokens: MAX_TOKENS[documentType],
   });
 
-  const title = `${documentType.replace(/_/g, " ")} — ${opp.title.slice(0, 80)}`;
+  const title = `${label} — ${opp.title.slice(0, 80)}`;
   const doc = await saveDocument({
     opportunity_id: opp.id,
     document_type: documentType,

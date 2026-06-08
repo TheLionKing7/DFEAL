@@ -4,7 +4,7 @@ import { requireApiUser } from "@/lib/auth/api-user";
 import { getDocument, listDocuments } from "@/lib/db/documents";
 import { getOpportunityById } from "@/lib/db/opportunities";
 import { isDatabaseConfigured } from "@/lib/db/supabase-admin";
-import { DOCUMENT_TYPES, type DocumentType } from "@/shared/opportunity-lanes";
+import { DOCUMENT_TYPES, type DocumentType } from "@/shared/document-types";
 
 export const maxDuration = 120;
 

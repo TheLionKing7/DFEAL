@@ -10,6 +10,22 @@ export function parseSledDate(value: string | null | undefined): string | null {
   return Number.isNaN(d.getTime()) ? null : d.toISOString();
 }
 
+/** Parse BidBuy Illinois dates like "06/09/2026 14:00:00" */
+export function parseIllinoisBidDate(value: string | null | undefined): string | null {
+  if (!value?.trim()) return null;
+  const m = value.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2}))?/);
+  if (!m) return parseSledDate(value);
+  const [, mm, dd, yyyy, hh = "0", min = "0"] = m;
+  const d = new Date(
+    Number(yyyy),
+    Number(mm) - 1,
+    Number(dd),
+    Number(hh),
+    Number(min),
+  );
+  return Number.isNaN(d.getTime()) ? null : d.toISOString();
+}
+
 /** Parse Georgia GPR date strings like "Jun 08, 2026 @ 08:00 AM" */
 export function parseGeorgiaDateString(value: string | null | undefined): string | null {
   if (!value?.trim()) return null;

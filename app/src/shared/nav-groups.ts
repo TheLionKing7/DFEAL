@@ -19,7 +19,15 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: "/explore", label: "Hot feed" },
       { href: "/opportunities", label: "All federal" },
-      ...OPPORTUNITY_LANES.filter((l) => l.phase <= 3 && l.id !== "grants").map((l) => ({
+      ...OPPORTUNITY_LANES.filter((l) => l.phase <= 3 && l.id !== "grants")
+        .sort((a, b) => {
+          if (a.id === "illinois") return -1;
+          if (b.id === "illinois") return 1;
+          if (a.id === "federal") return -1;
+          if (b.id === "federal") return 1;
+          return 0;
+        })
+        .map((l) => ({
         href: l.href,
         label: l.label,
         lane: l.id,
@@ -72,7 +80,7 @@ export const ASSISTANT_PROMPTS = [
   {
     title: "Opportunity discovery",
     prompt:
-      "Find the next best federal and SLED opportunities aligned to DFEAL NAICS and certifications. Prioritize by fit score and deadline.",
+      "Find the next best Illinois, federal, and SLED opportunities aligned to DFEAL NAICS and certifications. Prioritize Illinois home-state bids first, then by fit score and deadline.",
   },
   {
     title: "Pursuit intelligence",

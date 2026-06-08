@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { PageHeader, PageShell, Panel } from "@/components/layout/PageShell";
+import { getDocumentTypeLabel } from "@/shared/document-types";
 
 interface DocRow {
   id: string;
@@ -35,7 +36,7 @@ export default function DocumentsPage() {
     <PageShell>
       <PageHeader
         title="Documents"
-        description="AI-generated proposal sections saved from opportunity workspaces."
+        description="AI-generated capability statements, RFI responses, and proposals saved from opportunity workspaces."
       />
 
       {loading && <p className="text-sm text-text-muted">Loading…</p>}
@@ -55,7 +56,9 @@ export default function DocumentsPage() {
                 onClick={() => void openDoc(doc.id)}
                 className="w-full rounded-lg px-3 py-2 text-left hover:bg-bg"
               >
-                <p className="font-medium">{doc.title ?? doc.document_type}</p>
+                <p className="font-medium">
+                  {doc.title ?? getDocumentTypeLabel(doc.document_type)}
+                </p>
                 <p className="text-xs text-text-muted">
                   {new Date(doc.created_at).toLocaleString()}
                   {doc.opportunity_id && (
