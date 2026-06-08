@@ -10,7 +10,7 @@ export const maxDuration = 300;
 
 export async function POST(request: NextRequest) {
   if (!verifyCronAuth(request)) {
-    return unauthorizedCronResponse();
+    return unauthorizedCronResponse(request);
   }
 
   if (!isDatabaseConfigured()) {
