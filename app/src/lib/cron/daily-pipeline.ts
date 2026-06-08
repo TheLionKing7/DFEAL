@@ -5,6 +5,7 @@ import {
   insertOpportunityScores,
   listUnscoredOpportunityIds,
 } from "@/lib/db/opportunities";
+import { sendDailyDigestEmail } from "@/lib/email/daily-digest";
 import { ingestSamOpportunities } from "@/lib/ingest/sam-ingest";
 import { isHotScore, scoreOpportunity } from "@/lib/scoring/score-opportunity";
 
@@ -13,6 +14,7 @@ export interface DailyPipelineResult {
   ingest: { fetched: number; upserted: number };
   scored: number;
   hot_count: number;
+  email: { sent: boolean; skipped_reason?: string; recipient?: string };
 }
 
 export async function runDailyPipeline(): Promise<DailyPipelineResult> {
@@ -40,10 +42,28 @@ export async function runDailyPipeline(): Promise<DailyPipelineResult> {
 
     await insertOpportunityScores(scores);
 
+    let emailResult: Awaited<ReturnType<typeof sendDailyDigestEmail>> = {
+      sent: false,
+      skipped_reason: "not attempted",
+    };
+
+    try {
+      emailResult = await sendDailyDigestEmail({
+        hotCount,
+        scored: scores.length,
+        ingested: ingest.upserted,
+      });
+    } catch (emailError) {
+      const message =
+        emailError instanceof Error ? emailError.message : "Email send failed";
+      emailResult = { sent: false, skipped_reason: message };
+    }
+
     await finishDigestRun(digestId, {
       status: "success",
       opportunities_scored: scores.length,
       hot_count: hotCount,
+      email_sent: emailResult.sent,
     });
 
     return {
@@ -51,6 +71,11 @@ export async function runDailyPipeline(): Promise<DailyPipelineResult> {
       ingest,
       scored: scores.length,
       hot_count: hotCount,
+      email: {
+        sent: emailResult.sent,
+        skipped_reason: emailResult.skipped_reason,
+        recipient: emailResult.recipient,
+      },
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Daily pipeline failed";

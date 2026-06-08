@@ -36,6 +36,8 @@ export async function listOpportunities(options: {
   offset?: number;
   source?: string;
   naics?: string;
+  q?: string;
+  marketTier?: string;
 }): Promise<Opportunity[]> {
   const supabase = getSupabaseAdmin();
   let query = supabase
@@ -50,10 +52,39 @@ export async function listOpportunities(options: {
 
   if (options.source) query = query.eq("source", options.source);
   if (options.naics) query = query.eq("naics", options.naics);
+  if (options.marketTier) query = query.eq("market_tier", options.marketTier);
+  if (options.q?.trim()) {
+    const term = options.q.trim().replace(/[%_]/g, "");
+    query = query.or(`title.ilike.%${term}%,agency_name.ilike.%${term}%`);
+  }
 
   const { data, error } = await query;
   if (error) throw new Error(error.message);
   return (data ?? []).map(dbRowToOpportunity);
+}
+
+export async function listAgencySummaries(limit = 50) {
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase
+    .from("opportunities")
+    .select("agency_id, agency_name")
+    .eq("status", "active")
+    .not("agency_name", "is", null);
+
+  if (error) throw new Error(error.message);
+
+  const counts = new Map<string, { agency_id: string | null; agency_name: string; count: number }>();
+  for (const row of data ?? []) {
+    if (!row.agency_name) continue;
+    const key = row.agency_name;
+    const existing = counts.get(key);
+    if (existing) existing.count += 1;
+    else counts.set(key, { agency_id: row.agency_id, agency_name: row.agency_name, count: 1 });
+  }
+
+  return [...counts.values()]
+    .sort((a, b) => b.count - a.count)
+    .slice(0, limit);
 }
 
 export async function listHotOpportunities(limit = 12) {
@@ -159,6 +190,7 @@ export async function finishDigestRun(
     status: "success" | "failed";
     opportunities_scored: number;
     hot_count: number;
+    email_sent?: boolean;
     error_message?: string | null;
   },
 ) {

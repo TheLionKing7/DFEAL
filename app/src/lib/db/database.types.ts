@@ -97,6 +97,133 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["digest_runs"]["Row"]>;
         Relationships: [];
       };
+      analysis_runs: {
+        Row: {
+          id: string;
+          opportunity_id: string;
+          user_email: string | null;
+          provider: string | null;
+          fit_score: number | null;
+          go_no_go: string | null;
+          result_json: Json;
+          created_at: string;
+        };
+        Insert: {
+          opportunity_id: string;
+          user_email?: string | null;
+          provider?: string | null;
+          fit_score?: number | null;
+          go_no_go?: string | null;
+          result_json?: Json;
+        };
+        Update: Partial<Database["public"]["Tables"]["analysis_runs"]["Row"]>;
+        Relationships: [];
+      };
+      watchlists: {
+        Row: {
+          id: string;
+          user_email: string;
+          opportunity_id: string;
+          notes: string | null;
+          pursuit_stage: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          user_email: string;
+          opportunity_id: string;
+          notes?: string | null;
+          pursuit_stage?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["watchlists"]["Row"]>;
+        Relationships: [];
+      };
+      generated_documents: {
+        Row: {
+          id: string;
+          opportunity_id: string | null;
+          document_type: string;
+          title: string | null;
+          storage_bucket: string;
+          storage_path: string | null;
+          content_text: string | null;
+          format: string;
+          provider: string | null;
+          created_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          opportunity_id?: string | null;
+          document_type?: string;
+          title?: string | null;
+          storage_bucket?: string;
+          storage_path?: string | null;
+          content_text?: string | null;
+          format?: string;
+          provider?: string | null;
+          created_by?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["generated_documents"]["Row"]>;
+        Relationships: [];
+      };
+      compliance_runs: {
+        Row: {
+          id: string;
+          document_id: string | null;
+          opportunity_id: string | null;
+          provider: string | null;
+          checklist_json: Json;
+          pass_count: number;
+          fail_count: number;
+          created_at: string;
+        };
+        Insert: {
+          document_id?: string | null;
+          opportunity_id?: string | null;
+          provider?: string | null;
+          checklist_json?: Json;
+          pass_count?: number;
+          fail_count?: number;
+        };
+        Update: Partial<Database["public"]["Tables"]["compliance_runs"]["Row"]>;
+        Relationships: [];
+      };
+      chat_sessions: {
+        Row: {
+          id: string;
+          user_email: string | null;
+          page_context: Json;
+          title: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          user_email?: string | null;
+          page_context?: Json;
+          title?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["chat_sessions"]["Row"]>;
+        Relationships: [];
+      };
+      chat_messages: {
+        Row: {
+          id: string;
+          session_id: string;
+          role: string;
+          content: string;
+          provider: string | null;
+          created_at: string;
+        };
+        Insert: {
+          session_id: string;
+          role: string;
+          content: string;
+          provider?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["chat_messages"]["Row"]>;
+        Relationships: [];
+      };
     };
     Views: {
       hot_opportunities: {
