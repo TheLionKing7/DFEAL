@@ -3,6 +3,7 @@ import type { ExploreLane } from "@/lib/db/explore-data";
 import type { OpportunityCardData } from "@/components/opportunity/OpportunityCard";
 import { OpportunityCard } from "@/components/opportunity/OpportunityCard";
 import { SMART_CAPTURE } from "@/config/platform";
+import { TEAMING_VENDORS } from "@/config/teaming-vendors";
 
 export function RecommendedSection({ items }: { items: OpportunityCardData[] }) {
   if (items.length === 0) return null;
@@ -10,8 +11,11 @@ export function RecommendedSection({ items }: { items: OpportunityCardData[] }) 
   return (
     <section className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-text">Recommended For You</h2>
-        <Link href="/opportunities" className="text-sm font-medium text-gold hover:underline">
+        <h2 className="text-xl font-bold text-white">Recommended For You</h2>
+        <Link
+          href="/opportunities"
+          className="text-sm font-medium text-gold hover:underline"
+        >
           View all →
         </Link>
       </div>
@@ -24,44 +28,137 @@ export function RecommendedSection({ items }: { items: OpportunityCardData[] }) 
   );
 }
 
+function PopularLaneColumn({ lane }: { lane: ExploreLane }) {
+  return (
+    <div className="flex min-h-[220px] flex-col bg-white p-5 text-text">
+      <h3 className="text-sm font-semibold leading-snug text-sidebar">{lane.label}</h3>
+      {lane.items.length > 0 ? (
+        <>
+          <ul className="mt-3 flex-1 space-y-3">
+            {lane.items.map((opp) => (
+              <li key={opp.id}>
+                <Link
+                  href={`/opportunities/${opp.id}`}
+                  className="block text-sm font-medium leading-snug hover:text-gold"
+                >
+                  {opp.title}
+                </Link>
+                <p className="mt-0.5 text-xs text-text-muted">
+                  {opp.agency_name ?? "Agency TBD"}
+                  {opp.fit_score != null ? ` · Score ${opp.fit_score}%` : ""}
+                </p>
+              </li>
+            ))}
+          </ul>
+          <Link
+            href={lane.href}
+            className="mt-4 inline-block text-xs font-medium text-gold hover:underline"
+          >
+            See more →
+          </Link>
+        </>
+      ) : (
+        <div className="mt-3 flex flex-1 flex-col justify-between">
+          <p className="text-sm text-text-muted">
+            No opportunities ingested for this lane yet. Run daily ingest or check back
+            after the next sync.
+          </p>
+          <Link
+            href={lane.href}
+            className="mt-4 inline-block text-xs font-medium text-gold hover:underline"
+          >
+            Browse lane →
+          </Link>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function PopularSection({ lanes }: { lanes: ExploreLane[] }) {
-  const nonEmpty = lanes.filter((l) => l.items.length > 0);
-  if (nonEmpty.length === 0) return null;
+  const ordered = ["federal", "state", "grants"]
+    .map((id) => lanes.find((l) => l.id === id))
+    .filter((l): l is ExploreLane => Boolean(l));
+
+  if (ordered.length === 0) return null;
 
   return (
-    <section className="overflow-hidden rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 text-white">
-      <div className="px-6 py-6 md:px-8">
-        <h2 className="text-xl font-bold">Popular on {SMART_CAPTURE.name}</h2>
-        <p className="mt-1 text-sm text-white/85">
+    <section className="overflow-hidden rounded-2xl border border-sidebar-surface/40 bg-sidebar shadow-lg">
+      <div className="border-b border-white/10 bg-gradient-to-r from-sidebar via-sidebar-surface to-sidebar px-6 py-6 md:px-8">
+        <h2 className="text-xl font-bold text-white">
+          Popular on {SMART_CAPTURE.name.replace(/\s/g, "")}
+        </h2>
+        <p className="mt-1 text-sm text-sidebar-muted">
           Top contract opportunities by lane — scored for your company profile.
         </p>
       </div>
-      <div className="grid gap-px bg-white/20 md:grid-cols-3">
-        {nonEmpty.map((lane) => (
-          <div key={lane.id} className="bg-white p-5 text-text">
-            <h3 className="text-sm font-semibold text-sidebar">{lane.label}</h3>
+      <div className="grid gap-px bg-sidebar-surface/30 md:grid-cols-3">
+        {ordered.map((lane) => (
+          <PopularLaneColumn key={lane.id} lane={lane} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+export function RelevantVendorsSection() {
+  const jurisdictions = [
+    {
+      id: "federal",
+      label: "Federal",
+      vendors: TEAMING_VENDORS.filter((v) => v.jurisdiction === "federal"),
+    },
+    {
+      id: "state_local",
+      label: "State & Local",
+      vendors: TEAMING_VENDORS.filter((v) => v.jurisdiction === "state_local"),
+    },
+    {
+      id: "grants",
+      label: "Grants",
+      vendors: TEAMING_VENDORS.filter((v) => v.jurisdiction === "grants"),
+    },
+  ];
+
+  return (
+    <section className="space-y-4">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h2 className="text-xl font-bold text-white">Relevant Vendors</h2>
+          <p className="mt-1 text-sm text-sidebar-muted">
+            Teaming partners and subcontractors across your capture jurisdictions.
+          </p>
+        </div>
+        <Link
+          href="/participants/vendors"
+          className="text-sm font-medium text-gold hover:underline"
+        >
+          Manage vendors →
+        </Link>
+      </div>
+      <div className="grid gap-4 md:grid-cols-3">
+        {jurisdictions.map((j) => (
+          <div
+            key={j.id}
+            className="rounded-xl border border-white/10 bg-sidebar-surface/80 p-5 backdrop-blur-sm"
+          >
+            <h3 className="text-sm font-semibold text-gold">{j.label}</h3>
             <ul className="mt-3 space-y-3">
-              {lane.items.map((opp) => (
-                <li key={opp.id}>
-                  <Link
-                    href={`/opportunities/${opp.id}`}
-                    className="block text-sm font-medium leading-snug hover:text-gold"
-                  >
-                    {opp.title}
-                  </Link>
-                  <p className="mt-0.5 text-xs text-text-muted">
-                    {opp.agency_name ?? "Agency TBD"}
-                    {opp.fit_score != null ? ` · Score ${opp.fit_score}` : ""}
-                  </p>
+              {j.vendors.map((v) => (
+                <li key={v.name} className="border-b border-white/5 pb-3 last:border-0 last:pb-0">
+                  <p className="text-sm font-medium text-white">{v.name}</p>
+                  <p className="mt-0.5 text-xs text-sidebar-muted">{v.specialty}</p>
+                  {v.location && (
+                    <p className="mt-0.5 text-[10px] uppercase tracking-wide text-sidebar-muted/80">
+                      {v.location}
+                    </p>
+                  )}
                 </li>
               ))}
+              {j.vendors.length === 0 && (
+                <li className="text-sm text-sidebar-muted">No vendors configured yet.</li>
+              )}
             </ul>
-            <Link
-              href={`/opportunities?lane=${lane.id === "illinois" ? "illinois" : lane.id}`}
-              className="mt-4 inline-block text-xs font-medium text-gold hover:underline"
-            >
-              See more →
-            </Link>
           </div>
         ))}
       </div>
@@ -75,8 +172,8 @@ export function IndustryEventsSection({ items }: { items: OpportunityCardData[] 
   return (
     <section className="space-y-4">
       <div>
-        <h2 className="text-xl font-bold text-text">Industry Events & Invitations</h2>
-        <p className="mt-1 text-sm text-text-muted">
+        <h2 className="text-xl font-bold text-white">Industry Events & Invitations</h2>
+        <p className="mt-1 text-sm text-sidebar-muted">
           Informational events and conferences — not scored as contract opportunities.
         </p>
       </div>
@@ -84,19 +181,19 @@ export function IndustryEventsSection({ items }: { items: OpportunityCardData[] 
         {items.map((opp) => (
           <article
             key={opp.id}
-            className="rounded-xl border border-dashed border-border bg-bg-surface/60 p-4"
+            className="rounded-xl border border-dashed border-white/15 bg-sidebar-surface/50 p-4"
           >
-            <span className="rounded bg-sidebar/10 px-2 py-0.5 text-xs font-medium text-sidebar">
+            <span className="rounded bg-white/10 px-2 py-0.5 text-xs font-medium text-white/90">
               {opp.category_label ?? "Event"}
             </span>
-            <h3 className="mt-2 font-medium leading-snug">
+            <h3 className="mt-2 font-medium leading-snug text-white">
               <Link href={`/opportunities/${opp.id}`} className="hover:text-gold">
                 {opp.title}
               </Link>
             </h3>
-            <p className="mt-1 text-sm text-text-muted">{opp.agency_name ?? "Agency TBD"}</p>
+            <p className="mt-1 text-sm text-sidebar-muted">{opp.agency_name ?? "Agency TBD"}</p>
             {opp.response_deadline && (
-              <p className="mt-1 text-xs text-text-muted">
+              <p className="mt-1 text-xs text-sidebar-muted">
                 {new Date(opp.response_deadline).toLocaleDateString()}
               </p>
             )}

@@ -1,11 +1,12 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f7f6f3;
+  --background: #f0f2f6;
   --surface: #ffffff;
   --sidebar: #0f2744;
   --sidebar-muted: #94a3b8;
   --sidebar-surface: #1a3555;
+  --explore-bg: #0a1628;
   --border: #e2e8f0;
   --gold: #c9a84c;
   --success: #059669;
@@ -26,6 +27,7 @@
   --color-error: var(--error);
   --color-text: var(--text);
   --color-text-muted: var(--muted);
+  --color-explore-bg: var(--explore-bg);
   --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-mono: ui-monospace, "Cascadia Code", "Segoe UI Mono", monospace;
 }

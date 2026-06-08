@@ -1,6 +1,5 @@
 import {
   dbRowToOpportunity,
-  hotRowToDisplay,
 } from "@/lib/db/map-opportunity";
 import { getSupabaseAdmin } from "@/lib/db/supabase-admin";
 import { classifyOpportunity } from "@/lib/opportunity/classify";
@@ -10,6 +9,7 @@ import type { OpportunityCardData } from "@/components/opportunity/OpportunityCa
 export interface ExploreLane {
   id: string;
   label: string;
+  href: string;
   items: OpportunityCardData[];
 }
 
@@ -34,6 +34,28 @@ function toCard(
     go_no_go: extras?.go_no_go ?? scored.go_no_go,
     score_rationale: extras?.score_rationale ?? scored.rationale,
   };
+}
+
+function isFederal(id: string, source: string) {
+  return id.startsWith("sam-") || source === "sam" || source === "grants_gov";
+}
+
+function isGrant(id: string, source: string, noticeType: string) {
+  return id.startsWith("grants") || source === "grants_gov" || noticeType.includes("grant");
+}
+
+function isStateLocal(id: string, source: string) {
+  if (isFederal(id, source) || isGrant(id, source, "")) return false;
+  return (
+    id.startsWith("bidbuy_il-") ||
+    id.startsWith("georgia-") ||
+    id.startsWith("ohio-") ||
+    source === "bidbuy_il" ||
+    source === "georgia" ||
+    source === "ohio" ||
+    source === "demandstar" ||
+    source === "bonfire"
+  );
 }
 
 export async function loadExplorePageData() {
@@ -63,7 +85,7 @@ export async function loadExplorePageData() {
     .select("*")
     .eq("status", "active")
     .order("posted_date", { ascending: false, nullsFirst: false })
-    .limit(80);
+    .limit(120);
 
   if (recentError) throw new Error(recentError.message);
 
@@ -78,31 +100,53 @@ export async function loadExplorePageData() {
 
   const featured = recommended.slice(0, 5);
 
-  const laneDefs: { id: string; label: string; tier: string }[] = [
-    { id: "federal", label: "Federal Contract Opportunities", tier: "federal" },
-    { id: "state", label: "State & Local Contract Opportunities", tier: "state" },
-    { id: "illinois", label: "Illinois Opportunities", tier: "state" },
-  ];
+  const withSource = (recentRows ?? []).map((row) => ({
+    card: toCard(dbRowToOpportunity(row)),
+    source: row.source as string,
+    id: row.id as string,
+    notice_type: row.notice_type as string,
+  }));
 
-  const popularLanes: ExploreLane[] = laneDefs.map((lane) => {
-    let items = contracts;
-    if (lane.id === "federal") {
-      items = contracts.filter((c) => c.id.startsWith("sam-"));
-    } else if (lane.id === "illinois") {
-      items = contracts.filter((c) => c.id.startsWith("bidbuy_il-"));
-    } else {
-      items = contracts.filter(
-        (c) => !c.id.startsWith("sam-") && !c.id.startsWith("bidbuy_il-"),
-      );
-    }
-    return {
-      id: lane.id,
-      label: lane.label,
-      items: items
-        .sort((a, b) => (b.fit_score ?? 0) - (a.fit_score ?? 0))
-        .slice(0, 4),
-    };
-  });
+  const contractRows = withSource.filter((r) => r.card.category === "contract_opportunity");
+
+  const federalItems = contractRows
+    .filter((r) => isFederal(r.id, r.source) && !isGrant(r.id, r.source, r.notice_type))
+    .map((r) => r.card)
+    .sort((a, b) => (b.fit_score ?? 0) - (a.fit_score ?? 0))
+    .slice(0, 4);
+
+  const stateLocalItems = contractRows
+    .filter((r) => isStateLocal(r.id, r.source))
+    .map((r) => r.card)
+    .sort((a, b) => (b.fit_score ?? 0) - (a.fit_score ?? 0))
+    .slice(0, 4);
+
+  const grantItems = contractRows
+    .filter((r) => isGrant(r.id, r.source, r.notice_type))
+    .map((r) => r.card)
+    .sort((a, b) => (b.fit_score ?? 0) - (a.fit_score ?? 0))
+    .slice(0, 4);
+
+  const popularLanes: ExploreLane[] = [
+    {
+      id: "federal",
+      label: "Federal Contract Opportunities",
+      href: "/opportunities?lane=federal",
+      items: federalItems,
+    },
+    {
+      id: "state",
+      label: "State & Local Contract Opportunities",
+      href: "/opportunities?lane=state",
+      items: stateLocalItems,
+    },
+    {
+      id: "grants",
+      label: "Federal Grant Opportunities",
+      href: "/opportunities?lane=grants",
+      items: grantItems,
+    },
+  ];
 
   return {
     featured,
