@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { PageHeader, PageShell, Panel } from "@/components/layout/PageShell";
 
 interface DocRow {
   id: string;
@@ -31,18 +32,17 @@ export default function DocumentsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Documents</h1>
-        <p className="mt-2 text-text-muted">
-          AI-generated proposal sections saved from opportunity workspaces.
-        </p>
-      </div>
+    <PageShell>
+      <PageHeader
+        title="Documents"
+        description="AI-generated proposal sections saved from opportunity workspaces."
+      />
 
       {loading && <p className="text-sm text-text-muted">Loading…</p>}
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <ul className="space-y-2 rounded-xl border border-border bg-bg-surface p-4">
+        <Panel>
+        <ul className="space-y-2">
           {documents.length === 0 && !loading && (
             <li className="text-sm text-text-muted">
               No documents yet. Generate sections from an opportunity workspace.
@@ -75,8 +75,8 @@ export default function DocumentsPage() {
             </li>
           ))}
         </ul>
-        <div className="rounded-xl border border-border bg-bg-surface p-4">
-          <h2 className="font-semibold">Preview</h2>
+        </Panel>
+        <Panel title="Preview">
           {selected?.content_text ? (
             <pre className="mt-3 max-h-[520px] overflow-auto whitespace-pre-wrap text-xs text-text-muted">
               {selected.content_text}
@@ -84,8 +84,8 @@ export default function DocumentsPage() {
           ) : (
             <p className="mt-3 text-sm text-text-muted">Select a document to preview.</p>
           )}
-        </div>
+        </Panel>
       </div>
-    </div>
+    </PageShell>
   );
 }

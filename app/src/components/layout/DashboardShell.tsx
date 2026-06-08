@@ -42,7 +42,7 @@ function DashboardShellInner({
   setSidebarOpen: (v: boolean) => void;
   alertCount?: number;
 }) {
-  const { open } = useAssistant();
+  const { open, closeAssistant } = useAssistant();
 
   return (
     <div className="flex h-screen overflow-hidden bg-bg">
@@ -55,15 +55,22 @@ function DashboardShellInner({
           alertCount={alertCount}
           assistantOpen={open}
         />
-        <main className="flex min-h-0 flex-1 flex-col overflow-hidden p-0">
-          {open ? (
-            <Suspense fallback={<div className="p-6 text-sm text-text-muted">Loading AI…</div>}>
-              <AssistantWorkspace embedded />
-            </Suspense>
-          ) : (
-            <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 lg:p-6">
-              {children}
-            </div>
+        <main className="relative flex min-h-0 flex-1 overflow-hidden">
+          <div className="min-h-0 flex-1 overflow-y-auto p-4 lg:p-6">{children}</div>
+          {open && (
+            <>
+              <button
+                type="button"
+                aria-label="Close AI panel"
+                className="absolute inset-0 z-20 bg-black/30 lg:hidden"
+                onClick={closeAssistant}
+              />
+              <aside className="absolute inset-y-0 right-0 z-30 flex w-full max-w-md flex-col border-l border-border bg-bg shadow-xl lg:static lg:max-w-lg">
+                <Suspense fallback={<div className="p-6 text-sm text-text-muted">Loading AI…</div>}>
+                  <AssistantWorkspace embedded />
+                </Suspense>
+              </aside>
+            </>
           )}
         </main>
       </div>

@@ -28,22 +28,63 @@ export default async function OpportunityDetailPage({
     user?.email ? getPursuit(user.email, id) : Promise.resolve(null),
   ]);
 
-  const mappedAnalyses = analyses.map((run) => {
-    const json = run.result_json ?? {};
-    return {
-      fit_score: run.fit_score ?? 0,
-      go_no_go: run.go_no_go ?? "review",
-      summary: String(json.summary ?? ""),
-      strengths: Array.isArray(json.strengths) ? json.strengths.map(String) : [],
-      risks: Array.isArray(json.risks) ? json.risks.map(String) : [],
-      recommended_actions: Array.isArray(json.recommended_actions)
-        ? json.recommended_actions.map(String)
-        : [],
-      teaming_notes: String(json.teaming_notes ?? ""),
-      provider: run.provider ?? "unknown",
-      created_at: run.created_at,
-    };
-  });
+  const overviewRun = analyses.find(
+    (run) => (run.result_json as Record<string, unknown>)?.kind === "overview_summary",
+  );
+  const overviewSummary = overviewRun
+    ? {
+        executive_summary: String(
+          (overviewRun.result_json as Record<string, unknown>).executive_summary ?? "",
+        ),
+        scope_of_work: String(
+          (overviewRun.result_json as Record<string, unknown>).scope_of_work ?? "",
+        ),
+        key_requirements: Array.isArray(
+          (overviewRun.result_json as Record<string, unknown>).key_requirements,
+        )
+          ? ((overviewRun.result_json as Record<string, unknown>).key_requirements as unknown[]).map(
+              String,
+            )
+          : [],
+        important_dates: Array.isArray(
+          (overviewRun.result_json as Record<string, unknown>).important_dates,
+        )
+          ? ((overviewRun.result_json as Record<string, unknown>).important_dates as unknown[]).map(
+              String,
+            )
+          : [],
+        dfeal_fit: String((overviewRun.result_json as Record<string, unknown>).dfeal_fit ?? ""),
+        recommended_next_steps: Array.isArray(
+          (overviewRun.result_json as Record<string, unknown>).recommended_next_steps,
+        )
+          ? (
+              (overviewRun.result_json as Record<string, unknown>)
+                .recommended_next_steps as unknown[]
+            ).map(String)
+          : [],
+        provider: overviewRun.provider ?? "cached",
+        cached: true,
+      }
+    : null;
+
+  const mappedAnalyses = analyses
+    .filter((run) => (run.result_json as Record<string, unknown>)?.kind !== "overview_summary")
+    .map((run) => {
+      const json = run.result_json ?? {};
+      return {
+        fit_score: run.fit_score ?? 0,
+        go_no_go: run.go_no_go ?? "review",
+        summary: String(json.summary ?? ""),
+        strengths: Array.isArray(json.strengths) ? json.strengths.map(String) : [],
+        risks: Array.isArray(json.risks) ? json.risks.map(String) : [],
+        recommended_actions: Array.isArray(json.recommended_actions)
+          ? json.recommended_actions.map(String)
+          : [],
+        teaming_notes: String(json.teaming_notes ?? ""),
+        provider: run.provider ?? "unknown",
+        created_at: run.created_at,
+      };
+    });
 
   const mappedCompliance = complianceRuns.map((run) => {
     const json = run.checklist_json ?? {};
@@ -85,6 +126,7 @@ export default async function OpportunityDetailPage({
           : null
       }
       analyses={mappedAnalyses}
+      overviewSummary={overviewSummary}
       documents={documents.map((d) => ({
         id: d.id,
         title: d.title,

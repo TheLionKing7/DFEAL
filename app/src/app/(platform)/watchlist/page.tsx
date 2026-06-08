@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { PageHeader, PageShell, Panel } from "@/components/layout/PageShell";
 import { PURSUIT_STAGES, type PursuitStage } from "@/shared/opportunity-lanes";
 import { cn } from "@/shared/cn";
 
@@ -34,13 +35,11 @@ export default function PursuitsPage() {
   }, []);
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Pursuits</h1>
-        <p className="mt-2 text-text-muted">
-          Your active capture pipeline — track stages from qualifying through submission.
-        </p>
-      </div>
+    <PageShell>
+      <PageHeader
+        title="Pursuits"
+        description="Your active capture pipeline — track stages from qualifying through submission."
+      />
 
       {loading && <p className="text-sm text-text-muted">Loading pursuits…</p>}
       {error && (
@@ -55,7 +54,8 @@ export default function PursuitsPage() {
         </div>
       )}
 
-      <div className="overflow-x-auto rounded-xl border border-border bg-bg-surface">
+      <Panel className="overflow-x-auto p-0">
+        <div className="overflow-x-auto">
         <table className="w-full text-left text-sm">
           <thead>
             <tr className="border-b border-border text-xs uppercase text-text-muted">
@@ -111,7 +111,8 @@ export default function PursuitsPage() {
             ))}
           </tbody>
         </table>
-      </div>
-    </div>
+        </div>
+      </Panel>
+    </PageShell>
   );
 }

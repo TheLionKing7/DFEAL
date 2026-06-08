@@ -13,7 +13,7 @@ export function Header({
   alertCount?: number;
   assistantOpen?: boolean;
 }) {
-  const { openAssistant } = useAssistant();
+  const { openAssistant, closeAssistant, open: assistantPanelOpen } = useAssistant();
   const router = useRouter();
 
   function handleSearch(event: React.FormEvent<HTMLFormElement>) {
@@ -44,7 +44,9 @@ export function Header({
       <div className="ml-auto flex items-center gap-2">
         <button
           type="button"
-          onClick={() => openAssistant({ newChat: true })}
+          onClick={() =>
+            assistantPanelOpen ? closeAssistant() : openAssistant({ newChat: true })
+          }
           className={cn(
             "flex items-center gap-1.5 rounded-lg px-2 py-2 text-sm font-medium",
             assistantOpen

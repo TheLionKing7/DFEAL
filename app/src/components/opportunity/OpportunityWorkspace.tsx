@@ -1,8 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { Breadcrumb, PageShell, Panel } from "@/components/layout/PageShell";
+import { OpportunityContractStrip } from "@/components/opportunity/OpportunityContractStrip";
 import { WorkspaceTabs, type WorkspaceTab } from "@/components/opportunity/WorkspaceTabs";
+import { enrichOpportunityDetails } from "@/lib/opportunity/enrich";
 import {
   DOCUMENT_TYPES,
   PURSUIT_STAGES,
@@ -30,6 +33,17 @@ interface AnalysisData {
   created_at?: string;
 }
 
+interface OverviewSummary {
+  executive_summary: string;
+  scope_of_work: string;
+  key_requirements: string[];
+  important_dates: string[];
+  dfeal_fit: string;
+  recommended_next_steps: string[];
+  provider: string;
+  cached?: boolean;
+}
+
 interface PursuitData {
   pursuit_stage: PursuitStage;
   notes: string | null;
@@ -49,11 +63,17 @@ interface ComplianceData {
   items: { section: string; requirement: string; status: string; notes: string }[];
 }
 
+const btnPrimary =
+  "rounded-lg bg-sidebar px-4 py-2 text-sm font-medium text-white hover:bg-sidebar-surface disabled:opacity-60";
+const btnSecondary =
+  "rounded-lg border border-border bg-bg-surface px-4 py-2 text-sm font-medium hover:border-gold/40 disabled:opacity-60";
+
 export function OpportunityWorkspace({
   opportunity,
   score,
   pursuit,
   analyses,
+  overviewSummary: initialOverview,
   documents,
   complianceRuns,
 }: {
@@ -61,9 +81,11 @@ export function OpportunityWorkspace({
   score: ScoreData | null;
   pursuit: PursuitData | null;
   analyses: AnalysisData[];
+  overviewSummary: OverviewSummary | null;
   documents: DocumentData[];
   complianceRuns: ComplianceData[];
 }) {
+  const details = enrichOpportunityDetails(opportunity);
   const [tab, setTab] = useState<WorkspaceTab>("overview");
   const [onPursuit, setOnPursuit] = useState(Boolean(pursuit));
   const [pursuitStage, setPursuitStage] = useState<PursuitStage>(
@@ -71,17 +93,58 @@ export function OpportunityWorkspace({
   );
   const [pursuitNotes, setPursuitNotes] = useState(pursuit?.notes ?? "");
   const [analysis, setAnalysis] = useState<AnalysisData | null>(analyses[0] ?? null);
+  const [overview, setOverview] = useState<OverviewSummary | null>(initialOverview);
   const [docList, setDocList] = useState(documents);
-  const [selectedDoc, setSelectedDoc] = useState<{ id: string; content: string; title: string } | null>(null);
-  const [compliance, setCompliance] = useState<ComplianceData | null>(complianceRuns[0] ?? null);
+  const [selectedDoc, setSelectedDoc] = useState<{
+    id: string;
+    content: string;
+    title: string;
+  } | null>(null);
+  const [compliance, setCompliance] = useState<ComplianceData | null>(
+    complianceRuns[0] ?? null,
+  );
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const loadOverview = useCallback(async (force = false) => {
+    if (!force && overview) return;
+    setLoading("overview");
+    setError(null);
+    try {
+      if (!force) {
+        const cached = await fetch(`/api/opportunities/${opportunity.id}/summarize`);
+        const cachedData = await cached.json();
+        if (cachedData.summary) {
+          setOverview(cachedData.summary);
+          return;
+        }
+      }
+      const res = await fetch(`/api/opportunities/${opportunity.id}/summarize`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Summary failed");
+      setOverview(data.summary);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Summary failed");
+    } finally {
+      setLoading(null);
+    }
+  }, [opportunity.id, overview]);
+
+  useEffect(() => {
+    if (tab === "overview" && !overview && !initialOverview) {
+      void loadOverview();
+    }
+  }, [tab, overview, initialOverview, loadOverview]);
 
   async function runAnalyze() {
     setLoading("analyze");
     setError(null);
     try {
-      const res = await fetch(`/api/opportunities/${opportunity.id}/analyze`, { method: "POST" });
+      const res = await fetch(`/api/opportunities/${opportunity.id}/analyze`, {
+        method: "POST",
+      });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Analysis failed");
       setAnalysis(data.analysis);
@@ -143,6 +206,7 @@ export function OpportunityWorkspace({
   async function generateDocument(documentType: DocumentType) {
     setLoading(`doc-${documentType}`);
     setError(null);
+    setTab("documents");
     try {
       const res = await fetch("/api/documents/generate", {
         method: "POST",
@@ -150,18 +214,23 @@ export function OpportunityWorkspace({
         body: JSON.stringify({
           opportunity_id: opportunity.id,
           document_type: documentType,
-          analysis_summary: analysis?.summary,
+          analysis_summary: analysis?.summary ?? overview?.executive_summary,
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Generation failed");
+      if (!res.ok) {
+        throw new Error(
+          data.error ??
+            "Document generation failed. Confirm ANTHROPIC_API_KEY or GROQ_API_KEY is set on the server.",
+        );
+      }
+      const content = data.document?.content_text ?? "";
       setDocList((prev) => [data.document, ...prev]);
       setSelectedDoc({
         id: data.document.id,
-        title: data.document.title,
-        content: data.document.content_text,
+        title: data.document.title ?? documentType,
+        content,
       });
-      setTab("documents");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Generation failed");
     } finally {
@@ -178,8 +247,9 @@ export function OpportunityWorkspace({
       setSelectedDoc({
         id: data.document.id,
         title: data.document.title,
-        content: data.document.content_text,
+        content: data.document.content_text ?? "",
       });
+      setTab("documents");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Load failed");
     } finally {
@@ -211,54 +281,50 @@ export function OpportunityWorkspace({
   }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-5">
+    <PageShell className="space-y-5">
+      <Breadcrumb>
+        <Link href="/explore" className="hover:text-gold">
+          Explore
+        </Link>
+        <span className="mx-2">/</span>
+        <Link href="/opportunities" className="hover:text-gold">
+          Opportunities
+        </Link>
+        <span className="mx-2">/</span>
+        <span className="text-text">Workspace</span>
+      </Breadcrumb>
+
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
-          <Link href="/explore" className="text-sm text-text-muted hover:text-gold">
-            ← Back to explore
-          </Link>
-          <h1 className="mt-2 text-xl font-bold leading-snug lg:text-2xl">{opportunity.title}</h1>
-          <p className="mt-2 text-sm text-text-muted">
-            {opportunity.agency_name ?? "Agency TBD"}
-            {opportunity.naics ? ` · NAICS ${opportunity.naics}` : ""}
-            {opportunity.response_deadline
-              ? ` · Due ${new Date(opportunity.response_deadline).toLocaleDateString()}`
-              : ""}
-          </p>
+          <h1 className="text-xl font-bold leading-snug lg:text-2xl">{opportunity.title}</h1>
         </div>
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
             onClick={() => void runAnalyze()}
             disabled={loading === "analyze"}
-            className="rounded-lg bg-sidebar px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
+            className={btnPrimary}
           >
-            {loading === "analyze" ? "Analyzing…" : "Run AI analysis"}
+            {loading === "analyze" ? "Analyzing…" : "AI go/no-go"}
           </button>
           <button
             type="button"
-            onClick={() => void togglePursuit()}
-            className={cn(
-              "rounded-lg border px-4 py-2 text-sm font-medium",
-              onPursuit
-                ? "border-gold bg-gold/10 text-gold"
-                : "border-border hover:border-gold/40",
-            )}
+            onClick={() => {
+              setTab("documents");
+              void generateDocument("executive_summary");
+            }}
+            disabled={loading?.startsWith("doc-")}
+            className={btnSecondary}
           >
+            {loading?.startsWith("doc-") ? "Generating…" : "Generate document"}
+          </button>
+          <button type="button" onClick={() => void togglePursuit()} className={btnSecondary}>
             {onPursuit ? "In pursuits" : "Start pursuit"}
           </button>
-          {opportunity.sam_url && (
-            <a
-              href={opportunity.sam_url}
-              target="_blank"
-              rel="noreferrer"
-              className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:border-gold/40"
-            >
-              SAM.gov ↗
-            </a>
-          )}
         </div>
       </div>
+
+      <OpportunityContractStrip opportunity={opportunity} />
 
       {(score || analysis) && (
         <div className="flex flex-wrap gap-3 rounded-xl border border-border bg-bg-surface p-4">
@@ -282,74 +348,141 @@ export function OpportunityWorkspace({
       <WorkspaceTabs active={tab} onChange={setTab} />
 
       {tab === "overview" && (
-        <div className="space-y-4 rounded-xl border border-border bg-bg-surface p-6">
-          <h2 className="font-semibold">Solicitation overview</h2>
-          <dl className="grid gap-3 text-sm sm:grid-cols-2">
-            <Field label="Notice #" value={opportunity.external_id} />
-            <Field label="Set-aside" value={opportunity.set_aside ?? "Unrestricted"} />
-            <Field label="PSC" value={opportunity.psc ?? "—"} />
-            <Field label="Est. value" value={formatValue(opportunity.estimated_value_usd)} />
-            <Field label="Posted" value={formatDate(opportunity.posted_date)} />
-            <Field label="Response due" value={formatDate(opportunity.response_deadline)} />
-          </dl>
-          <div>
-            <h3 className="text-sm font-semibold">Description</h3>
-            <p className="mt-2 whitespace-pre-wrap text-sm text-text-muted">
-              {opportunity.description ?? "No description available."}
-            </p>
-          </div>
-          {score && (
-            <div className="rounded-lg bg-bg p-4 text-sm">
-              <p className="font-medium">Daily profile score</p>
-              <p className="mt-1 text-text-muted">{score.rationale}</p>
+        <div className="space-y-4">
+          <Panel title="AI summary">
+            {loading === "overview" && !overview && (
+              <p className="text-sm text-text-muted">Generating opportunity overview…</p>
+            )}
+            {overview ? (
+              <div className="space-y-4 text-sm">
+                <p className="text-base leading-relaxed">{overview.executive_summary}</p>
+                <div>
+                  <h3 className="font-semibold">Scope of work</h3>
+                  <p className="mt-1 whitespace-pre-wrap text-text-muted">{overview.scope_of_work}</p>
+                </div>
+                <div>
+                  <h3 className="font-semibold">DFEAL fit</h3>
+                  <p className="mt-1 text-text-muted">{overview.dfeal_fit}</p>
+                </div>
+                <BulletSection title="Key requirements" items={overview.key_requirements} />
+                <BulletSection title="Important dates" items={overview.important_dates} />
+                <BulletSection title="Recommended next steps" items={overview.recommended_next_steps} />
+                <div className="flex flex-wrap gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => void loadOverview(true)}
+                    className={btnSecondary}
+                  >
+                    Refresh summary
+                  </button>
+                  <button type="button" onClick={() => void runAnalyze()} className={btnPrimary}>
+                    Run full analysis
+                  </button>
+                </div>
+              </div>
+            ) : (
+              !loading && (
+                <button type="button" onClick={() => void loadOverview(true)} className={btnPrimary}>
+                  Generate AI overview
+                </button>
+              )
+            )}
+          </Panel>
+
+          <Panel title="Solicitation details">
+            <dl className="grid gap-3 text-sm sm:grid-cols-2">
+              <Field label="Notice #" value={opportunity.external_id} />
+              <Field label="Set-aside" value={opportunity.set_aside ?? "Unrestricted"} />
+              <Field label="PSC" value={opportunity.psc ?? "—"} />
+              <Field label="Est. value" value={formatValue(opportunity.estimated_value_usd)} />
+            </dl>
+            <div className="mt-4">
+              <h3 className="text-sm font-semibold">Full description</h3>
+              <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-text-muted">
+                {details.description ??
+                  details.synopsis ??
+                  "No description in the feed. Open the source portal for the full solicitation text."}
+              </p>
             </div>
-          )}
+            {details.contacts.length > 0 && (
+              <div className="mt-4">
+                <h3 className="text-sm font-semibold">Contacts</h3>
+                <ul className="mt-2 space-y-1 text-sm text-text-muted">
+                  {details.contacts.map((c, i) => (
+                    <li key={i}>
+                      {c.name}
+                      {c.email ? ` · ${c.email}` : ""}
+                      {c.phone ? ` · ${c.phone}` : ""}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {details.resourceLinks.length > 0 && (
+              <div className="mt-4">
+                <h3 className="text-sm font-semibold">Links & attachments</h3>
+                <ul className="mt-2 space-y-1 text-sm">
+                  {details.resourceLinks.map((link) => (
+                    <li key={link.url}>
+                      <a
+                        href={link.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="font-medium text-gold hover:underline"
+                      >
+                        {link.label} ↗
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {score && (
+              <div className="mt-4 rounded-lg bg-bg p-4 text-sm">
+                <p className="font-medium">Daily profile score</p>
+                <p className="mt-1 text-text-muted">{score.rationale}</p>
+              </div>
+            )}
+          </Panel>
         </div>
       )}
 
       {tab === "analyze" && (
-        <div className="space-y-4 rounded-xl border border-border bg-bg-surface p-6">
+        <Panel title="Go / no-go analysis">
           {!analysis ? (
             <div className="text-center">
               <p className="text-sm text-text-muted">
-                Run AI analysis for a detailed go/no-go recommendation with strengths, risks, and
-                capture actions.
+                Deep AI analysis with strengths, risks, and capture actions.
               </p>
-              <button
-                type="button"
-                onClick={() => void runAnalyze()}
-                className="mt-4 rounded-lg bg-sidebar px-4 py-2 text-sm font-medium text-white"
-              >
+              <button type="button" onClick={() => void runAnalyze()} className={cn(btnPrimary, "mt-4")}>
                 Analyze now
               </button>
             </div>
           ) : (
-            <>
-              <p className="text-sm">{analysis.summary}</p>
-              <SectionList title="Strengths" items={analysis.strengths} />
-              <SectionList title="Risks" items={analysis.risks} />
-              <SectionList title="Recommended actions" items={analysis.recommended_actions} />
+            <div className="space-y-4 text-sm">
+              <p>{analysis.summary}</p>
+              <BulletSection title="Strengths" items={analysis.strengths} />
+              <BulletSection title="Risks" items={analysis.risks} />
+              <BulletSection title="Recommended actions" items={analysis.recommended_actions} />
               {analysis.teaming_notes && (
                 <div>
-                  <h3 className="text-sm font-semibold">Teaming notes</h3>
-                  <p className="mt-1 text-sm text-text-muted">{analysis.teaming_notes}</p>
+                  <h3 className="font-semibold">Teaming notes</h3>
+                  <p className="mt-1 text-text-muted">{analysis.teaming_notes}</p>
                 </div>
               )}
-              <p className="text-xs text-text-muted">Provider: {analysis.provider}</p>
-            </>
+            </div>
           )}
-        </div>
+        </Panel>
       )}
 
       {tab === "pursuit" && (
-        <div className="space-y-4 rounded-xl border border-border bg-bg-surface p-6">
+        <Panel title="Pursuit pipeline">
           {!onPursuit ? (
             <p className="text-sm text-text-muted">
-              Add this opportunity to your pursuit pipeline to track stage, notes, and proposal
-              progress.
+              Add to your pursuit pipeline to track stage, notes, and proposal progress.
             </p>
           ) : (
-            <>
+            <div className="space-y-4">
               <label className="block text-sm">
                 <span className="font-medium">Pursuit stage</span>
                 <select
@@ -371,29 +504,21 @@ export function OpportunityWorkspace({
                   onChange={(e) => setPursuitNotes(e.target.value)}
                   rows={5}
                   className="mt-1 w-full rounded-lg border border-border px-3 py-2"
-                  placeholder="Teaming partners, win themes, deadlines, action items…"
                 />
               </label>
-              <button
-                type="button"
-                onClick={() => void savePursuit()}
-                disabled={loading === "pursuit-save"}
-                className="rounded-lg bg-sidebar px-4 py-2 text-sm font-medium text-white"
-              >
+              <button type="button" onClick={() => void savePursuit()} className={btnPrimary}>
                 Save pursuit
               </button>
-            </>
+            </div>
           )}
-        </div>
+        </Panel>
       )}
 
       {tab === "documents" && (
         <div className="grid gap-4 lg:grid-cols-2">
-          <div className="space-y-3 rounded-xl border border-border bg-bg-surface p-6">
-            <h2 className="font-semibold">Generate proposal sections</h2>
-            <p className="text-sm text-text-muted">
-              AI drafts use the DFEAL profile and opportunity context. Review and edit before
-              submission.
+          <Panel title="Generate proposal sections">
+            <p className="mb-4 text-sm text-text-muted">
+              AI drafts use the DFEAL profile, overview summary, and solicitation context.
             </p>
             <div className="flex flex-wrap gap-2">
               {DOCUMENT_TYPES.map((dt) => (
@@ -402,20 +527,20 @@ export function OpportunityWorkspace({
                   type="button"
                   onClick={() => void generateDocument(dt.id)}
                   disabled={loading === `doc-${dt.id}`}
-                  className="rounded-lg border border-border px-3 py-2 text-xs font-medium hover:border-gold/40 disabled:opacity-50"
+                  className={btnSecondary}
                 >
                   {loading === `doc-${dt.id}` ? "Generating…" : dt.label}
                 </button>
               ))}
             </div>
             {docList.length > 0 && (
-              <ul className="mt-4 space-y-2 text-sm">
+              <ul className="mt-4 space-y-2 border-t border-border pt-4 text-sm">
                 {docList.map((doc) => (
                   <li key={doc.id}>
                     <button
                       type="button"
                       onClick={() => void loadDocument(doc.id)}
-                      className="text-left text-gold hover:underline"
+                      className="text-left font-medium text-gold hover:underline"
                     >
                       {doc.title ?? doc.document_type}
                     </button>
@@ -426,31 +551,43 @@ export function OpportunityWorkspace({
                 ))}
               </ul>
             )}
-          </div>
-          <div className="rounded-xl border border-border bg-bg-surface p-6">
-            <h2 className="font-semibold">Preview</h2>
-            {selectedDoc ? (
-              <pre className="mt-3 max-h-[480px] overflow-auto whitespace-pre-wrap text-xs text-text-muted">
-                {selectedDoc.content}
-              </pre>
+          </Panel>
+          <Panel title="Document preview">
+            {selectedDoc?.content ? (
+              <>
+                <div className="mb-3 flex gap-2">
+                  <button
+                    type="button"
+                    className={btnSecondary}
+                    onClick={() => navigator.clipboard.writeText(selectedDoc.content)}
+                  >
+                    Copy
+                  </button>
+                </div>
+                <pre className="max-h-[520px] overflow-auto whitespace-pre-wrap text-sm leading-relaxed text-text-muted">
+                  {selectedDoc.content}
+                </pre>
+              </>
             ) : (
-              <p className="mt-3 text-sm text-text-muted">Select or generate a document to preview.</p>
+              <p className="text-sm text-text-muted">
+                Select a section above or click <strong>Generate document</strong> in the header.
+              </p>
             )}
-          </div>
+          </Panel>
         </div>
       )}
 
       {tab === "compliance" && (
-        <div className="space-y-4 rounded-xl border border-border bg-bg-surface p-6">
-          <div className="flex flex-wrap items-center justify-between gap-3">
+        <Panel title="Compliance check">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <p className="text-sm text-text-muted">
-              Validate solicitation requirements against your draft (Section L/M style checklist).
+              Section L/M style checklist against solicitation and your draft.
             </p>
             <button
               type="button"
               onClick={() => void runCompliance()}
               disabled={loading === "compliance"}
-              className="rounded-lg bg-sidebar px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
+              className={btnPrimary}
             >
               {loading === "compliance" ? "Checking…" : "Run compliance check"}
             </button>
@@ -460,7 +597,7 @@ export function OpportunityWorkspace({
               <p className="text-sm">
                 {compliance.summary} ({compliance.pass_count} pass · {compliance.fail_count} fail)
               </p>
-              <div className="overflow-x-auto">
+              <div className="mt-4 overflow-x-auto">
                 <table className="w-full text-left text-sm">
                   <thead>
                     <tr className="border-b border-border text-xs uppercase text-text-muted">
@@ -484,9 +621,9 @@ export function OpportunityWorkspace({
               </div>
             </>
           )}
-        </div>
+        </Panel>
       )}
-    </div>
+    </PageShell>
   );
 }
 
@@ -508,12 +645,12 @@ function Field({ label, value }: { label: string; value: string }) {
   );
 }
 
-function SectionList({ title, items }: { title: string; items: string[] }) {
+function BulletSection({ title, items }: { title: string; items: string[] }) {
   if (items.length === 0) return null;
   return (
     <div>
-      <h3 className="text-sm font-semibold">{title}</h3>
-      <ul className="mt-1 list-inside list-disc text-sm text-text-muted">
+      <h3 className="font-semibold">{title}</h3>
+      <ul className="mt-1 list-inside list-disc text-text-muted">
         {items.map((item, i) => (
           <li key={i}>{item}</li>
         ))}
@@ -522,12 +659,11 @@ function SectionList({ title, items }: { title: string; items: string[] }) {
   );
 }
 
-function formatDate(value: string | null) {
-  if (!value) return "—";
-  return new Date(value).toLocaleDateString();
-}
-
 function formatValue(value: number | null) {
   if (value == null) return "—";
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(value);
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  }).format(value);
 }

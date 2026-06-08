@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PageHeader, PageShell, Panel } from "@/components/layout/PageShell";
 import { OpportunityCard } from "@/components/opportunity/OpportunityCard";
 import {
   listHotOpportunities,
@@ -69,27 +70,27 @@ export default async function ExplorePage() {
   const { items, mode, error } = await loadExploreData();
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">Explore</h1>
-          <p className="mt-2 text-text-muted">
-            {mode === "hot"
-              ? "Hot opportunities scored against the DFEAL profile."
-              : mode === "all"
-                ? "Latest opportunities — run daily cron to populate scores."
-                : mode === "live"
-                  ? "Live SAM.gov preview."
-                  : "Opportunity feed"}
-          </p>
-        </div>
-        <Link
-          href="/opportunities"
-          className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:border-gold/40"
-        >
-          Browse all →
-        </Link>
-      </div>
+    <PageShell>
+      <PageHeader
+        title="Explore"
+        description={
+          mode === "hot"
+            ? "Hot opportunities scored against the DFEAL profile."
+            : mode === "all"
+              ? "Latest opportunities — run daily cron to populate scores."
+              : mode === "live"
+                ? "Live SAM.gov preview."
+                : "Opportunity feed"
+        }
+        actions={
+          <Link
+            href="/opportunities"
+            className="rounded-lg border border-border bg-bg-surface px-4 py-2 text-sm font-medium hover:border-gold/40"
+          >
+            Browse all →
+          </Link>
+        }
+      />
 
       {error && (
         <p className="rounded-lg border border-error/30 bg-error/5 px-4 py-3 text-sm text-error">
@@ -103,12 +104,14 @@ export default async function ExplorePage() {
         <QuickLink href="/entity" title="SAM entity" desc="Verify registration" />
       </div>
 
-      <div className="space-y-3">
-        {items.map((opp) => (
-          <OpportunityCard key={opp.id} opp={opp} />
-        ))}
-      </div>
-    </div>
+      <Panel title="Opportunity feed">
+        <div className="space-y-3">
+          {items.map((opp) => (
+            <OpportunityCard key={opp.id} opp={opp} />
+          ))}
+        </div>
+      </Panel>
+    </PageShell>
   );
 }
 

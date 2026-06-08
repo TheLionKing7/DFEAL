@@ -1,3 +1,4 @@
+import { PageHeader, PageShell, Panel } from "@/components/layout/PageShell";
 import { OpportunityCard } from "@/components/opportunity/OpportunityCard";
 import type { OpportunityCardData } from "@/components/opportunity/OpportunityCard";
 import { listHotOpportunities, listOpportunities } from "@/lib/db/opportunities";
@@ -86,15 +87,13 @@ export default async function OpportunitiesPage({
   }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">
-          {laneMeta?.label ?? "Opportunities"}
-        </h1>
-        <p className="mt-2 text-text-muted">
-          {laneMeta?.description ?? "Search and open opportunities in the capture workspace."}
-        </p>
-      </div>
+    <PageShell>
+      <PageHeader
+        title={laneMeta?.label ?? "Opportunities"}
+        description={
+          laneMeta?.description ?? "Search and open opportunities in the capture workspace."
+        }
+      />
 
       <form className="flex gap-2">
         <input type="hidden" name="lane" value={lane} />
@@ -124,13 +123,13 @@ export default async function OpportunitiesPage({
         </p>
       )}
 
-      <p className="text-sm text-text-muted">{items.length} results</p>
-
-      <div className="space-y-3">
-        {items.map((opp) => (
-          <OpportunityCard key={opp.id} opp={opp} />
-        ))}
-      </div>
-    </div>
+      <Panel title={`${items.length} results`}>
+        <div className="space-y-3">
+          {items.map((opp) => (
+            <OpportunityCard key={opp.id} opp={opp} />
+          ))}
+        </div>
+      </Panel>
+    </PageShell>
   );
 }

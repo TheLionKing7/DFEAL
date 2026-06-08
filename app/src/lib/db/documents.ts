@@ -53,7 +53,7 @@ export async function saveDocument(input: {
       document_type: input.document_type,
       title: input.title,
       content_text: input.content_text,
-      storage_path: null,
+      storage_path: "",
       format: "markdown",
       provider: input.provider,
       created_by: input.created_by,
