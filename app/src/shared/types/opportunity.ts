@@ -3,9 +3,12 @@ export type OpportunitySource =
   | "ohio"
   | "georgia"
   | "grants_gov"
+  | "sba"
   | "demandstar"
   | "bidbuy_il"
-  | "bonfire";
+  | "bonfire"
+  | "stateuniv_il"
+  | "education_il";
 
 export type MarketTier = "federal" | "state" | "local" | "education";
 

@@ -19,7 +19,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: "/explore", label: "Hot feed" },
       { href: "/opportunities", label: "All federal" },
-      ...OPPORTUNITY_LANES.filter((l) => l.phase <= 3 && l.id !== "grants")
+      ...OPPORTUNITY_LANES.filter((l) => l.phase <= 3)
         .sort((a, b) => {
           if (a.id === "illinois") return -1;
           if (b.id === "illinois") return 1;

@@ -2,7 +2,8 @@ import { PageHeader, PageShell, Panel } from "@/components/layout/PageShell";
 import { OpportunityCard } from "@/components/opportunity/OpportunityCard";
 import type { OpportunityCardData } from "@/components/opportunity/OpportunityCard";
 import { listHotOpportunities, listOpportunities } from "@/lib/db/opportunities";
-import { listConnectorStatus, laneToSledSources } from "@/lib/sled/registry";
+import { listFederalGrantConnectorStatus } from "@/lib/grants/registry";
+import { listConnectorStatus, laneToGrantSources, laneToSledSources } from "@/lib/sled/registry";
 import {
   laneToMarketTier,
   OPPORTUNITY_LANES,
@@ -48,7 +49,30 @@ export default async function OpportunitiesPage({
         score_rationale: null,
       }));
     } else if (lane === "grants") {
-      notice = "Grants.gov lane is Phase 2 — not yet connected.";
+      const sources = laneToGrantSources(lane);
+      const connectors = listFederalGrantConnectorStatus().filter((c) =>
+        sources.includes(c.id),
+      );
+      const live = connectors.filter((c) => c.status === "live");
+
+      if (live.length === 0) {
+        notice = "Grants ingest connectors are not live yet. Run POST /api/cron/ingest-grants.";
+      }
+
+      const rows = await listOpportunities({ limit: 50, q });
+      const filtered = rows.filter((r) => sources.includes(r.source as (typeof sources)[number]));
+
+      if (filtered.length === 0 && live.length > 0) {
+        notice =
+          "No ingested grant opportunities yet. Trigger POST /api/cron/ingest-grants (or wait for daily cron).";
+      }
+
+      items = filtered.map((o) => ({
+        ...o,
+        fit_score: null,
+        go_no_go: null,
+        score_rationale: null,
+      }));
     } else {
       const sources = laneToSledSources(lane);
       const connectors = listConnectorStatus().filter((c) => sources.includes(c.id));

@@ -51,6 +51,9 @@ function scoreNaics(opp: Opportunity, dfealNaics: string[]): { points: number; r
     if (opp.source === "bidbuy_il") {
       return { points: 6, reason: "Illinois bid — NAICS not listed on bulletin" };
     }
+    if (opp.source === "grants_gov" || opp.source === "sba") {
+      return { points: 10, reason: "Grant opportunity — NAICS often not listed; verify eligibility" };
+    }
     return { points: 2, reason: "NAICS not listed — verify in solicitation" };
   }
 
@@ -197,6 +200,16 @@ export function scoreOpportunity(opp: Opportunity): ScoreResult {
     reasons.push(`Illinois home-state priority (${DFEAL_HOME_STATE})`);
   }
 
+  if (opp.source === "grants_gov" || (opp.source === "sba" && opp.raw_data?.funding_type === "sba_grant_program")) {
+    score += 8;
+    reasons.push("Federal grant lane — aligned to DFEAL research & program capabilities");
+  }
+
+  if (opp.raw_data?.funding_type === "sba_grant_program") {
+    score += 6;
+    reasons.push("SBA grant program reference");
+  }
+
   if (matchesSetAside(opp.set_aside, criteria.preferredSetAsides)) {
     score += 14;
     reasons.push(`Set-aside "${opp.set_aside ?? "Unrestricted"}" fits preferences`);
@@ -234,7 +247,7 @@ export function scoreOpportunity(opp: Opportunity): ScoreResult {
   } else if (
     score < 40 ||
     (daysLeft !== null && daysLeft < criteria.minDaysToDeadline) ||
-    naics.points === 0
+    (naics.points === 0 && opp.source !== "grants_gov" && opp.source !== "sba")
   ) {
     go_no_go = "no_go";
   }

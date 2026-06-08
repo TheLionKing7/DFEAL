@@ -4,8 +4,20 @@ import type { MarketTier, Opportunity } from "@/shared/types/opportunity";
 import type { DbOpportunity, HotOpportunity, Json } from "@/lib/db/database.types";
 
 function deriveMarketTier(opp: Opportunity): MarketTier {
-  if (opp.source === "sam" || opp.source === "grants_gov") return "federal";
-  if (opp.source === "bonfire") return "local";
+  const rawTier = opp.raw_data?.market_tier;
+  if (rawTier === "local" || rawTier === "education" || rawTier === "state") {
+    return rawTier;
+  }
+
+  if (opp.source === "sam" || opp.source === "grants_gov" || opp.source === "sba") {
+    return "federal";
+  }
+  if (opp.source === "stateuniv_il" || opp.source === "education_il") return "education";
+  if (opp.source === "bonfire") {
+    const tier = opp.raw_data?.market_tier;
+    if (tier === "education") return "education";
+    return "local";
+  }
   if (opp.source === "ohio" || opp.source === "bidbuy_il") return "state";
   if (opp.source === "georgia") {
     const govType = opp.raw_data?.governmentType;

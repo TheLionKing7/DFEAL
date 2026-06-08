@@ -36,25 +36,33 @@ function toCard(
   };
 }
 
-function isFederal(id: string, source: string) {
-  return id.startsWith("sam-") || source === "sam" || source === "grants_gov";
+function isFederal(_id: string, source: string) {
+  return source === "sam" || _id.startsWith("sam-");
 }
 
-function isGrant(id: string, source: string, noticeType: string) {
-  return id.startsWith("grants") || source === "grants_gov" || noticeType.includes("grant");
+function isGrant(source: string, raw?: Record<string, unknown> | null) {
+  if (source === "grants_gov") return true;
+  if (source === "sba" && raw?.funding_type !== "sba_event") return true;
+  return false;
 }
 
 function isStateLocal(id: string, source: string) {
-  if (isFederal(id, source) || isGrant(id, source, "")) return false;
+  if (isFederal(id, source)) return false;
+  if (isGrant(source)) return false;
   return (
     id.startsWith("bidbuy_il-") ||
     id.startsWith("georgia-") ||
     id.startsWith("ohio-") ||
+    id.startsWith("bonfire-") ||
+    id.startsWith("stateuniv_il-") ||
+    id.startsWith("education_il-") ||
     source === "bidbuy_il" ||
     source === "georgia" ||
     source === "ohio" ||
     source === "demandstar" ||
-    source === "bonfire"
+    source === "bonfire" ||
+    source === "stateuniv_il" ||
+    source === "education_il"
   );
 }
 
@@ -104,13 +112,13 @@ export async function loadExplorePageData() {
     card: toCard(dbRowToOpportunity(row)),
     source: row.source as string,
     id: row.id as string,
-    notice_type: row.notice_type as string,
+    raw: row.raw_json as Record<string, unknown> | null,
   }));
 
   const contractRows = withSource.filter((r) => r.card.category === "contract_opportunity");
 
   const federalItems = contractRows
-    .filter((r) => isFederal(r.id, r.source) && !isGrant(r.id, r.source, r.notice_type))
+    .filter((r) => isFederal(r.id, r.source))
     .map((r) => r.card)
     .sort((a, b) => (b.fit_score ?? 0) - (a.fit_score ?? 0))
     .slice(0, 4);
@@ -122,7 +130,7 @@ export async function loadExplorePageData() {
     .slice(0, 4);
 
   const grantItems = contractRows
-    .filter((r) => isGrant(r.id, r.source, r.notice_type))
+    .filter((r) => isGrant(r.source, r.raw))
     .map((r) => r.card)
     .sort((a, b) => (b.fit_score ?? 0) - (a.fit_score ?? 0))
     .slice(0, 4);

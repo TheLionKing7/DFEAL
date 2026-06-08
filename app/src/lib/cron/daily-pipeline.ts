@@ -7,6 +7,7 @@ import {
   listUnscoredOpportunityIds,
 } from "@/lib/db/opportunities";
 import { sendDailyDigestEmail } from "@/lib/email/daily-digest";
+import { ingestAllEnabledGrants } from "@/lib/ingest/grants-ingest";
 import { ingestSamOpportunities } from "@/lib/ingest/sam-ingest";
 import { ingestAllEnabledSled } from "@/lib/ingest/sled-ingest";
 import { isHotScore, scoreOpportunity } from "@/lib/scoring/score-opportunity";
@@ -15,6 +16,11 @@ export interface DailyPipelineResult {
   digest_id: string;
   ingest: { fetched: number; upserted: number };
   sled_ingest?: {
+    total_fetched: number;
+    total_upserted: number;
+    sources: Record<string, unknown>;
+  };
+  grants_ingest?: {
     total_fetched: number;
     total_upserted: number;
     sources: Record<string, unknown>;
@@ -30,10 +36,16 @@ export async function runDailyPipeline(): Promise<DailyPipelineResult> {
   try {
     const ingest = await ingestSamOpportunities(30);
     let sledIngest: Awaited<ReturnType<typeof ingestAllEnabledSled>> | undefined;
+    let grantsIngest: Awaited<ReturnType<typeof ingestAllEnabledGrants>> | undefined;
     try {
       sledIngest = await ingestAllEnabledSled(30);
     } catch {
       sledIngest = { sources: {}, total_fetched: 0, total_upserted: 0 };
+    }
+    try {
+      grantsIngest = await ingestAllEnabledGrants(120);
+    } catch {
+      grantsIngest = { sources: {}, total_fetched: 0, total_upserted: 0 };
     }
     const activeIds = await listActiveOpportunityIds(200);
     const scores = [];
@@ -64,7 +76,7 @@ export async function runDailyPipeline(): Promise<DailyPipelineResult> {
       emailResult = await sendDailyDigestEmail({
         hotCount,
         scored: scores.length,
-        ingested: ingest.upserted + (sledIngest?.total_upserted ?? 0),
+        ingested: ingest.upserted + (sledIngest?.total_upserted ?? 0) + (grantsIngest?.total_upserted ?? 0),
       });
     } catch (emailError) {
       const message =
@@ -87,6 +99,13 @@ export async function runDailyPipeline(): Promise<DailyPipelineResult> {
             total_fetched: sledIngest.total_fetched,
             total_upserted: sledIngest.total_upserted,
             sources: sledIngest.sources,
+          }
+        : undefined,
+      grants_ingest: grantsIngest
+        ? {
+            total_fetched: grantsIngest.total_fetched,
+            total_upserted: grantsIngest.total_upserted,
+            sources: grantsIngest.sources,
           }
         : undefined,
       scored: scores.length,

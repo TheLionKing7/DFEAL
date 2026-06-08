@@ -57,6 +57,15 @@ function haystack(opp: Opportunity): string {
 export function classifyOpportunity(opp: Opportunity): OpportunityClassification {
   const text = haystack(opp);
 
+  if (opp.raw_data?.funding_type === "sba_event") {
+    return {
+      category: "industry_event",
+      label: "SBA event",
+      isPursuable: false,
+      reason: "SBA business development event — not a contract or grant solicitation",
+    };
+  }
+
   if (opp.notice_type === "award") {
     return {
       category: "award_notice",

@@ -5,7 +5,9 @@ export type SledSource =
   | "georgia"
   | "demandstar"
   | "bidbuy_il"
-  | "bonfire";
+  | "bonfire"
+  | "stateuniv_il"
+  | "education_il";
 
 export interface SledConnectorMeta {
   id: SledSource;
