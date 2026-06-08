@@ -7,11 +7,17 @@ import {
 } from "@/lib/db/opportunities";
 import { sendDailyDigestEmail } from "@/lib/email/daily-digest";
 import { ingestSamOpportunities } from "@/lib/ingest/sam-ingest";
+import { ingestAllEnabledSled } from "@/lib/ingest/sled-ingest";
 import { isHotScore, scoreOpportunity } from "@/lib/scoring/score-opportunity";
 
 export interface DailyPipelineResult {
   digest_id: string;
   ingest: { fetched: number; upserted: number };
+  sled_ingest?: {
+    total_fetched: number;
+    total_upserted: number;
+    sources: Record<string, unknown>;
+  };
   scored: number;
   hot_count: number;
   email: { sent: boolean; skipped_reason?: string; recipient?: string };
@@ -22,6 +28,12 @@ export async function runDailyPipeline(): Promise<DailyPipelineResult> {
 
   try {
     const ingest = await ingestSamOpportunities(30);
+    let sledIngest: Awaited<ReturnType<typeof ingestAllEnabledSled>> | undefined;
+    try {
+      sledIngest = await ingestAllEnabledSled(30);
+    } catch {
+      sledIngest = { sources: {}, total_fetched: 0, total_upserted: 0 };
+    }
     const unscoredIds = await listUnscoredOpportunityIds(200);
     const scores = [];
     let hotCount = 0;
@@ -51,7 +63,7 @@ export async function runDailyPipeline(): Promise<DailyPipelineResult> {
       emailResult = await sendDailyDigestEmail({
         hotCount,
         scored: scores.length,
-        ingested: ingest.upserted,
+        ingested: ingest.upserted + (sledIngest?.total_upserted ?? 0),
       });
     } catch (emailError) {
       const message =
@@ -69,6 +81,13 @@ export async function runDailyPipeline(): Promise<DailyPipelineResult> {
     return {
       digest_id: digestId,
       ingest,
+      sled_ingest: sledIngest
+        ? {
+            total_fetched: sledIngest.total_fetched,
+            total_upserted: sledIngest.total_upserted,
+            sources: sledIngest.sources,
+          }
+        : undefined,
       scored: scores.length,
       hot_count: hotCount,
       email: {

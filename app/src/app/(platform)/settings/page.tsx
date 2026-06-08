@@ -1,6 +1,7 @@
 import { DFEAL_PROFILE, getDfealNaicsCodes } from "@/config/dfeal-profile";
 import { hasAnthropicApiKey, hasGroqApiKey } from "@/lib/env";
 import { isDatabaseConfigured } from "@/lib/db/supabase-admin";
+import { listConnectorStatus } from "@/lib/sled/registry";
 
 export default function SettingsPage() {
   const naics = getDfealNaicsCodes();
@@ -45,6 +46,31 @@ export default function SettingsPage() {
           <StatusRow label="Supabase database" ok={isDatabaseConfigured()} />
           <StatusRow label="Claude (Anthropic)" ok={hasAnthropicApiKey()} />
           <StatusRow label="Groq fallback" ok={hasGroqApiKey()} />
+        </ul>
+      </section>
+
+      <section className="rounded-xl border border-border bg-bg-surface p-6 text-sm">
+        <h2 className="font-semibold">Phase 3 — SLED connectors</h2>
+        <ul className="mt-4 space-y-3">
+          {listConnectorStatus().map((c) => (
+            <li key={c.id} className="flex items-start justify-between gap-4">
+              <div>
+                <p className="font-medium">{c.name}</p>
+                <p className="text-xs text-text-muted">{c.description}</p>
+              </div>
+              <span
+                className={
+                  c.status === "live"
+                    ? "text-success"
+                    : c.status === "credentials_required"
+                      ? "text-gold"
+                      : "text-text-muted"
+                }
+              >
+                {c.status.replace("_", " ")}
+              </span>
+            </li>
+          ))}
         </ul>
       </section>
     </div>

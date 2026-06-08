@@ -1,7 +1,12 @@
 import { OpportunityCard } from "@/components/opportunity/OpportunityCard";
 import type { OpportunityCardData } from "@/components/opportunity/OpportunityCard";
 import { listHotOpportunities, listOpportunities } from "@/lib/db/opportunities";
-import { laneToMarketTier, laneToSource, type OpportunityLaneId } from "@/shared/opportunity-lanes";
+import { listConnectorStatus, laneToSledSources } from "@/lib/sled/registry";
+import {
+  laneToMarketTier,
+  OPPORTUNITY_LANES,
+  type OpportunityLaneId,
+} from "@/shared/opportunity-lanes";
 
 export const dynamic = "force-dynamic";
 
@@ -13,39 +18,67 @@ export default async function OpportunitiesPage({
   const params = await searchParams;
   const lane = (params.lane ?? "federal") as OpportunityLaneId;
   const q = params.q?.trim();
+  const laneMeta = OPPORTUNITY_LANES.find((l) => l.id === lane);
 
   let items: OpportunityCardData[] = [];
+  let notice: string | null = null;
   let error: string | null = null;
 
   try {
     if (lane === "federal" && !q) {
       const hot = await listHotOpportunities(50);
-      items = hot.length > 0 ? hot : await listOpportunities({ limit: 50, source: "sam" }).then(
-        (rows) =>
-          rows.map((o) => ({
-            ...o,
-            fit_score: null,
-            go_no_go: null,
-            score_rationale: null,
-            scored_at: null,
-          })),
-      );
-    } else if (lane !== "federal") {
-      items = [];
-      error = `${lane} lane connectors are Phase 3 — federal SAM data is available now.`;
-    } else {
-      const rows = await listOpportunities({
-        limit: 50,
-        source: laneToSource(lane),
-        marketTier: laneToMarketTier(lane),
-        q,
-      });
+      if (hot.length > 0) {
+        items = hot;
+      } else {
+        const rows = await listOpportunities({ limit: 50, source: "sam" });
+        items = rows.map((o) => ({
+          ...o,
+          fit_score: null,
+          go_no_go: null,
+          score_rationale: null,
+        }));
+      }
+    } else if (lane === "federal" && q) {
+      const rows = await listOpportunities({ limit: 50, source: "sam", q });
       items = rows.map((o) => ({
         ...o,
         fit_score: null,
         go_no_go: null,
         score_rationale: null,
-        scored_at: null,
+      }));
+    } else if (lane === "grants") {
+      notice = "Grants.gov lane is Phase 2 — not yet connected.";
+    } else {
+      const sources = laneToSledSources(lane);
+      const connectors = listConnectorStatus().filter((c) => sources.includes(c.id));
+      const live = connectors.filter((c) => c.status === "live");
+
+      if (live.length === 0) {
+        notice = `${laneMeta?.label ?? lane}: ${connectors.map((c) => c.description).join(" · ")}. Run /api/cron/ingest-sled after connectors are live.`;
+      }
+
+      const rows = await listOpportunities({
+        limit: 50,
+        source: sources.length === 1 ? sources[0] : undefined,
+        marketTier: laneToMarketTier(lane),
+        q,
+      });
+
+      const filtered =
+        sources.length > 1
+          ? rows.filter((r) => sources.includes(r.source as (typeof sources)[number]))
+          : rows;
+
+      if (filtered.length === 0 && live.length > 0) {
+        notice =
+          "No ingested opportunities for this lane yet. Trigger POST /api/cron/ingest-sled (or wait for daily cron).";
+      }
+
+      items = filtered.map((o) => ({
+        ...o,
+        fit_score: null,
+        go_no_go: null,
+        score_rationale: null,
       }));
     }
   } catch (err) {
@@ -55,13 +88,16 @@ export default async function OpportunitiesPage({
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Opportunities</h1>
+        <h1 className="text-2xl font-bold">
+          {laneMeta?.label ?? "Opportunities"}
+        </h1>
         <p className="mt-2 text-text-muted">
-          Search and open any opportunity in the capture workspace.
+          {laneMeta?.description ?? "Search and open opportunities in the capture workspace."}
         </p>
       </div>
 
       <form className="flex gap-2">
+        <input type="hidden" name="lane" value={lane} />
         <input
           name="q"
           defaultValue={q}
@@ -76,8 +112,14 @@ export default async function OpportunitiesPage({
         </button>
       </form>
 
-      {error && (
+      {notice && (
         <p className="rounded-lg border border-gold/30 bg-gold/5 px-4 py-3 text-sm text-gold">
+          {notice}
+        </p>
+      )}
+
+      {error && (
+        <p className="rounded-lg border border-error/30 bg-error/5 px-4 py-3 text-sm text-error">
           {error}
         </p>
       )}

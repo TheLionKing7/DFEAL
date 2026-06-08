@@ -1,4 +1,13 @@
-export type OpportunitySource = "sam" | "ohio" | "georgia" | "grants_gov";
+export type OpportunitySource =
+  | "sam"
+  | "ohio"
+  | "georgia"
+  | "grants_gov"
+  | "demandstar"
+  | "bidbuy_il"
+  | "bonfire";
+
+export type MarketTier = "federal" | "state" | "local" | "education";
 
 export type OpportunityStatus = "active" | "closed" | "awarded" | "cancelled";
 

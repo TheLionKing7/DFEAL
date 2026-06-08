@@ -61,7 +61,7 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
               Opportunities
             </p>
             {nav("/opportunities", "All federal", pathname === "/opportunities" && !lane)}
-            {OPPORTUNITY_LANES.filter((l) => l.phase === 1).map((l) =>
+            {OPPORTUNITY_LANES.filter((l) => l.phase <= 3 && l.id !== "grants").map((l) =>
               nav(l.href, l.label, pathname === "/opportunities" && lane === l.id),
             )}
           </div>

@@ -1,6 +1,24 @@
 import { createHash } from "crypto";
-import type { Opportunity } from "@/shared/types/opportunity";
+import { governmentTypeToMarketTier } from "@/lib/sled/normalize";
+import type { MarketTier, Opportunity } from "@/shared/types/opportunity";
 import type { DbOpportunity, HotOpportunity, Json } from "@/lib/db/database.types";
+
+function deriveMarketTier(opp: Opportunity): MarketTier {
+  if (opp.source === "sam" || opp.source === "grants_gov") return "federal";
+  if (opp.source === "bonfire") return "local";
+  if (opp.source === "ohio" || opp.source === "bidbuy_il") return "state";
+  if (opp.source === "georgia") {
+    const govType = opp.raw_data?.governmentType;
+    if (typeof govType === "string") return governmentTypeToMarketTier(govType);
+    return "state";
+  }
+  if (opp.source === "demandstar") {
+    const tier = opp.raw_data?.market_tier;
+    if (tier === "local" || tier === "education" || tier === "state") return tier;
+    return "state";
+  }
+  return "federal";
+}
 
 export function parseSamDate(value: string | null | undefined): string | null {
   if (!value?.trim()) return null;
@@ -31,7 +49,7 @@ export function opportunityToDbRow(opp: Opportunity) {
     id: opp.id,
     source: opp.source,
     external_id: opp.external_id,
-    market_tier: "federal" as const,
+    market_tier: deriveMarketTier(opp),
     notice_type: opp.notice_type,
     title: opp.title,
     description: opp.description,
