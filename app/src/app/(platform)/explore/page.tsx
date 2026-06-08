@@ -1,96 +1,46 @@
-import Link from "next/link";
-import { PageHeader, PageShell, Panel } from "@/components/layout/PageShell";
-import { OpportunityCard } from "@/components/opportunity/OpportunityCard";
+import { ExploreHero } from "@/components/explore/ExploreHero";
 import {
-  listHotOpportunities,
-  listOpportunities,
-} from "@/lib/db/opportunities";
+  IndustryEventsSection,
+  PopularSection,
+  RecommendedSection,
+} from "@/components/explore/ExploreSections";
+import { PageShell } from "@/components/layout/PageShell";
+import { SMART_CAPTURE, TENANT } from "@/config/platform";
+import { loadExplorePageData } from "@/lib/db/explore-data";
 import { isDatabaseConfigured } from "@/lib/db/supabase-admin";
-import { createSamGovClient } from "@/lib/sam-gov/client";
-import { normalizeSamOpportunity } from "@/lib/sam-gov/normalize";
-import { getDfealNaicsCodes } from "@/config/dfeal-profile";
 
 export const dynamic = "force-dynamic";
 
-async function loadExploreData() {
+export default async function ExplorePage() {
+  let featured: Awaited<ReturnType<typeof loadExplorePageData>>["featured"] = [];
+  let recommended: Awaited<ReturnType<typeof loadExplorePageData>>["recommended"] = [];
+  let popularLanes: Awaited<ReturnType<typeof loadExplorePageData>>["popularLanes"] = [];
+  let industryEvents: Awaited<ReturnType<typeof loadExplorePageData>>["industryEvents"] = [];
+  let error: string | null = null;
+
   if (isDatabaseConfigured()) {
     try {
-      const hot = await listHotOpportunities(12);
-      if (hot.length > 0) {
-        return { items: hot, mode: "hot" as const, error: null as string | null };
-      }
-      const all = await listOpportunities({ limit: 12 });
-      return {
-        items: all.map((o) => ({
-          ...o,
-          fit_score: null,
-          go_no_go: null,
-          score_rationale: null,
-        })),
-        mode: "all" as const,
-        error: null as string | null,
-      };
-    } catch (error) {
-      return {
-        items: [],
-        mode: "error" as const,
-        error: error instanceof Error ? error.message : "Database query failed",
-      };
+      const data = await loadExplorePageData();
+      featured = data.featured;
+      recommended = data.recommended;
+      popularLanes = data.popularLanes;
+      industryEvents = data.industryEvents;
+    } catch (err) {
+      error = err instanceof Error ? err.message : "Failed to load explore feed";
     }
+  } else {
+    error = "Database not configured — connect Supabase to load opportunities.";
   }
-
-  try {
-    const client = createSamGovClient();
-    const seen = new Set<string>();
-    const rows = [];
-    for (const ncode of getDfealNaicsCodes().slice(0, 2)) {
-      const { rows: batch } = await client.searchOpportunities({ ncode, limit: 10 });
-      for (const raw of batch) {
-        if (seen.has(raw.noticeId)) continue;
-        seen.add(raw.noticeId);
-        rows.push({
-          ...normalizeSamOpportunity(raw),
-          fit_score: null,
-          go_no_go: null,
-          score_rationale: null,
-        });
-      }
-    }
-    return { items: rows.slice(0, 12), mode: "live" as const, error: null };
-  } catch (error) {
-    return {
-      items: [],
-      mode: "error" as const,
-      error: error instanceof Error ? error.message : "Failed to load opportunities",
-    };
-  }
-}
-
-export default async function ExplorePage() {
-  const { items, mode, error } = await loadExploreData();
 
   return (
-    <PageShell>
-      <PageHeader
-        title="Explore"
-        description={
-          mode === "hot"
-            ? "Hot opportunities scored against the DFEAL profile — Illinois home-state bids are prioritized."
-            : mode === "all"
-              ? "Latest opportunities — run daily cron to populate scores."
-              : mode === "live"
-                ? "Live SAM.gov preview."
-                : "Opportunity feed"
-        }
-        actions={
-          <Link
-            href="/opportunities"
-            className="rounded-lg border border-border bg-bg-surface px-4 py-2 text-sm font-medium hover:border-gold/40"
-          >
-            Browse all →
-          </Link>
-        }
-      />
+    <PageShell className="space-y-8">
+      <div>
+        <p className="text-sm font-medium text-gold">{SMART_CAPTURE.tagline}</p>
+        <h1 className="mt-1 text-2xl font-bold text-text">Explore</h1>
+        <p className="mt-1 text-sm text-text-muted">
+          Contract intelligence for {TENANT.legalName} — powered by {SMART_CAPTURE.name}.
+        </p>
+      </div>
 
       {error && (
         <p className="rounded-lg border border-error/30 bg-error/5 px-4 py-3 text-sm text-error">
@@ -98,31 +48,13 @@ export default async function ExplorePage() {
         </p>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <QuickLink href="/watchlist" title="Pursuits" desc="Track bid pipeline" />
-        <QuickLink href="/documents" title="Documents" desc="Proposal drafts" />
-        <QuickLink href="/entity" title="SAM entity" desc="Verify registration" />
-      </div>
+      <ExploreHero items={featured} />
 
-      <Panel title="Opportunity feed">
-        <div className="space-y-3">
-          {items.map((opp) => (
-            <OpportunityCard key={opp.id} opp={opp} />
-          ))}
-        </div>
-      </Panel>
+      <RecommendedSection items={recommended} />
+
+      <PopularSection lanes={popularLanes} />
+
+      <IndustryEventsSection items={industryEvents} />
     </PageShell>
-  );
-}
-
-function QuickLink({ href, title, desc }: { href: string; title: string; desc: string }) {
-  return (
-    <Link
-      href={href}
-      className="rounded-xl border border-border bg-bg-surface p-4 hover:border-gold/30"
-    >
-      <p className="font-semibold">{title}</p>
-      <p className="mt-1 text-sm text-text-muted">{desc}</p>
-    </Link>
   );
 }

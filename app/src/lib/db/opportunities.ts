@@ -4,6 +4,7 @@ import {
   hotRowToDisplay,
   opportunityToDbRow,
 } from "@/lib/db/map-opportunity";
+import { isContractOpportunity } from "@/lib/opportunity/classify";
 import type { Opportunity } from "@/shared/types/opportunity";
 
 export async function upsertOpportunities(
@@ -96,7 +97,22 @@ export async function listHotOpportunities(limit = 12) {
     .limit(limit);
 
   if (error) throw new Error(error.message);
-  return (data ?? []).map(hotRowToDisplay);
+  return (data ?? [])
+    .map(hotRowToDisplay)
+    .filter((opp) => isContractOpportunity(opp));
+}
+
+export async function listActiveOpportunityIds(limit = 200): Promise<string[]> {
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase
+    .from("opportunities")
+    .select("id")
+    .eq("status", "active")
+    .order("posted_date", { ascending: false, nullsFirst: false })
+    .limit(limit);
+
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((r) => r.id);
 }
 
 export async function listUnscoredOpportunityIds(limit = 100): Promise<string[]> {

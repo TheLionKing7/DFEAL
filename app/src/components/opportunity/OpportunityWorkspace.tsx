@@ -7,6 +7,7 @@ import { DocumentGeneratorPanel } from "@/components/opportunity/DocumentGenerat
 import { OpportunityContractStrip } from "@/components/opportunity/OpportunityContractStrip";
 import { WorkspaceTabs, type WorkspaceTab } from "@/components/opportunity/WorkspaceTabs";
 import { enrichOpportunityDetails } from "@/lib/opportunity/enrich";
+import { classifyOpportunity } from "@/lib/opportunity/classify";
 import { PURSUIT_STAGES, type PursuitStage } from "@/shared/opportunity-lanes";
 import { type DocumentType } from "@/shared/document-types";
 import { cn } from "@/shared/cn";
@@ -83,6 +84,7 @@ export function OpportunityWorkspace({
   complianceRuns: ComplianceData[];
 }) {
   const details = enrichOpportunityDetails(opportunity);
+  const classification = classifyOpportunity(opportunity);
   const [tab, setTab] = useState<WorkspaceTab>("overview");
   const [onPursuit, setOnPursuit] = useState(Boolean(pursuit));
   const [pursuitStage, setPursuitStage] = useState<PursuitStage>(
@@ -335,7 +337,14 @@ export function OpportunityWorkspace({
 
       <OpportunityContractStrip opportunity={opportunity} />
 
-      {(score || analysis) && (
+      {!classification.isPursuable && (
+        <div className="rounded-xl border border-amber-300/50 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+          <strong>{classification.label}</strong> — {classification.reason}. This item is
+          listed for awareness and is not scored as a contract opportunity.
+        </div>
+      )}
+
+      {(score || analysis) && classification.isPursuable && (
         <div className="flex flex-wrap gap-3 rounded-xl border border-border bg-bg-surface p-4">
           <Badge label="Score" value={String(analysis?.fit_score ?? score?.fit_score ?? "—")} />
           <Badge

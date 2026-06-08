@@ -12,11 +12,23 @@ export interface OpportunityCardData {
   go_no_go?: string | null;
   score_rationale?: string | null;
   sam_url?: string | null;
+  notice_type?: string | null;
+  category?: string | null;
+  category_label?: string | null;
 }
 
 export function OpportunityCard({ opp }: { opp: OpportunityCardData }) {
+  const isEvent = opp.category === "industry_event";
+
   return (
-    <article className="rounded-xl border border-border bg-bg-surface p-5 shadow-sm transition hover:border-gold/30">
+    <article
+      className={cn(
+        "rounded-xl border bg-bg-surface p-5 shadow-sm transition",
+        isEvent
+          ? "border-dashed border-border/80"
+          : "border-border hover:border-gold/30",
+      )}
+    >
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
           <Link
@@ -34,12 +46,17 @@ export function OpportunityCard({ opp }: { opp: OpportunityCardData }) {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          {opp.fit_score != null && (
-            <span className="rounded bg-sidebar px-2 py-0.5 text-xs font-medium text-white">
-              Score {opp.fit_score}
+          {opp.category_label && opp.category !== "contract_opportunity" && (
+            <span className="rounded bg-sidebar/10 px-2 py-0.5 text-xs font-medium text-sidebar">
+              {opp.category_label}
             </span>
           )}
-          {opp.go_no_go && (
+          {opp.fit_score != null && !isEvent && (
+            <span className="rounded bg-sidebar px-2 py-0.5 text-xs font-medium text-white">
+              {opp.fit_score}%
+            </span>
+          )}
+          {opp.go_no_go && !isEvent && (
             <span
               className={cn(
                 "rounded px-2 py-0.5 text-xs font-medium uppercase",
@@ -60,16 +77,21 @@ export function OpportunityCard({ opp }: { opp: OpportunityCardData }) {
           )}
         </div>
       </div>
-      {opp.score_rationale && (
-        <p className="mt-2 text-xs text-text-muted">{opp.score_rationale}</p>
+      {opp.score_rationale && !isEvent && (
+        <p className="mt-2 text-xs text-text-muted line-clamp-2">{opp.score_rationale}</p>
       )}
       <div className="mt-3 flex flex-wrap gap-3 text-sm">
         <Link href={`/opportunities/${opp.id}`} className="font-medium text-gold hover:underline">
           Open workspace →
         </Link>
         {opp.sam_url && (
-          <a href={opp.sam_url} target="_blank" rel="noreferrer" className="text-text-muted hover:text-gold">
-            SAM.gov ↗
+          <a
+            href={opp.sam_url}
+            target="_blank"
+            rel="noreferrer"
+            className="text-text-muted hover:text-gold"
+          >
+            Source ↗
           </a>
         )}
       </div>

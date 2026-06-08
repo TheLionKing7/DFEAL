@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
+import { SMART_CAPTURE, TENANT } from "@/config/platform";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "DFEAL Capture",
-  description:
-    "Internal AI platform for DFEAL LLC — federal and SLED contract intelligence",
+  title: SMART_CAPTURE.name,
+  description: `${SMART_CAPTURE.tagline} — ${TENANT.legalName} contracting workspace`,
 };
 
 export default function RootLayout({

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useAssistant } from "@/components/assistant/AssistantContext";
 import { usePageContext } from "@/components/assistant/PageContextProvider";
+import { TENANT } from "@/config/platform";
 import { ASSISTANT_PROMPTS } from "@/shared/nav-groups";
 import { cn } from "@/shared/cn";
 
@@ -204,9 +205,9 @@ export function AssistantWorkspace({
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
           <div>
-            <h1 className="text-sm font-semibold text-text">DFEAL AI assistant</h1>
+            <h1 className="text-sm font-semibold text-text">{TENANT.assistantName}</h1>
             <p className="text-xs text-text-muted">
-              Strategic capture intelligence · opportunity discovery · execution planning
+              Strategic capture intelligence for {TENANT.legalName}
             </p>
           </div>
           {fullPage && (

@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useAssistant } from "@/components/assistant/AssistantContext";
+import { TENANT } from "@/config/platform";
 import { cn } from "@/shared/cn";
 
 export function Header({
@@ -37,7 +38,7 @@ export function Header({
         <input
           name="q"
           type="search"
-          placeholder="Search opportunities…"
+          placeholder="Search everywhere…"
           className="w-full rounded-lg border border-border bg-bg px-3 py-2 text-sm"
         />
       </form>
@@ -57,7 +58,7 @@ export function Header({
           <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gold/10 text-gold">
             ✦
           </span>
-          <span className="hidden md:inline">AI assistant</span>
+          <span className="hidden md:inline">{TENANT.assistantName}</span>
         </button>
         <LinkSignOut />
         {alertCount > 0 && (

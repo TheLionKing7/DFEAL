@@ -100,7 +100,7 @@ export function buildDailyDigestHtml(options: {
       }
       <p style="margin:24px 0 0">
         <a href="${escapeHtml(exploreUrl)}" style="display:inline-block;background:#0f2744;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:600">
-          Open DFEAL Capture →
+          Open Smart Capture →
         </a>
       </p>
     </div>

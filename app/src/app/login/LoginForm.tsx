@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { DFEAL_PROFILE } from "@/config/dfeal-profile";
+import { SMART_CAPTURE, TENANT } from "@/config/platform";
 import { getAllowedEmailDomain, isAllowedTeamEmail } from "@/lib/auth/team-access";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
@@ -62,9 +63,11 @@ export default function LoginForm() {
         <p className="text-xs font-bold uppercase tracking-widest text-gold">
           Team access
         </p>
-        <h1 className="mt-2 text-2xl font-bold">{DFEAL_PROFILE.productName}</h1>
+        <h1 className="mt-2 text-2xl font-bold">{SMART_CAPTURE.name}</h1>
+        <p className="mt-1 text-xs text-text-muted">{SMART_CAPTURE.tagline}</p>
+        <p className="mt-2 text-sm font-medium text-gold">{TENANT.legalName}</p>
         <p className="mt-2 text-sm text-text-muted">
-          Sign in with your DFEAL email to view scored opportunities.
+          Sign in with your @{TENANT.shortName.toLowerCase()} team email.
         </p>
 
         <div className="mt-6 flex rounded-lg border border-border p-1 text-sm">

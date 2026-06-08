@@ -3,6 +3,7 @@ import {
   finishDigestRun,
   getOpportunityById,
   insertOpportunityScores,
+  listActiveOpportunityIds,
   listUnscoredOpportunityIds,
 } from "@/lib/db/opportunities";
 import { sendDailyDigestEmail } from "@/lib/email/daily-digest";
@@ -34,11 +35,11 @@ export async function runDailyPipeline(): Promise<DailyPipelineResult> {
     } catch {
       sledIngest = { sources: {}, total_fetched: 0, total_upserted: 0 };
     }
-    const unscoredIds = await listUnscoredOpportunityIds(200);
+    const activeIds = await listActiveOpportunityIds(200);
     const scores = [];
     let hotCount = 0;
 
-    for (const id of unscoredIds) {
+    for (const id of activeIds) {
       const opp = await getOpportunityById(id);
       if (!opp) continue;
       const result = scoreOpportunity(opp);
@@ -108,13 +109,15 @@ export async function runDailyPipeline(): Promise<DailyPipelineResult> {
   }
 }
 
-export async function runScoringOnly(limit = 200) {
+export async function runScoringOnly(limit = 200, rescoreAll = true) {
   const digestId = await createDigestRun();
-  const unscoredIds = await listUnscoredOpportunityIds(limit);
+  const ids = rescoreAll
+    ? await listActiveOpportunityIds(limit)
+    : await listUnscoredOpportunityIds(limit);
   const scores = [];
   let hotCount = 0;
 
-  for (const id of unscoredIds) {
+  for (const id of ids) {
     const opp = await getOpportunityById(id);
     if (!opp) continue;
     const result = scoreOpportunity(opp);

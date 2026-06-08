@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useAssistant } from "@/components/assistant/AssistantContext";
 import { SidebarNavGroup } from "@/components/layout/SidebarNavGroup";
+import { SMART_CAPTURE, TENANT } from "@/config/platform";
 import { NAV_GROUPS } from "@/shared/nav-groups";
 import { cn } from "@/shared/cn";
 
@@ -29,18 +30,24 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
           open ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
         )}
       >
-        <div className="flex items-center justify-between border-b border-white/10 px-3 py-3">
-          <Link href="/explore" onClick={onClose} className="text-sm font-bold tracking-wide">
-            DFEAL
-          </Link>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded p-1 text-sidebar-muted hover:text-white lg:hidden"
-            aria-label="Close menu"
-          >
-            ✕
-          </button>
+        <div className="border-b border-white/10 px-3 py-3">
+          <div className="flex items-start justify-between gap-2">
+            <Link href="/explore" onClick={onClose} className="min-w-0">
+              <p className="text-sm font-bold tracking-wide">{SMART_CAPTURE.name}</p>
+              <p className="text-[10px] leading-tight text-sidebar-muted">
+                {SMART_CAPTURE.tagline}
+              </p>
+              <p className="mt-1.5 text-[11px] font-medium text-gold/90">{TENANT.legalName}</p>
+            </Link>
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded p-1 text-sidebar-muted hover:text-white lg:hidden"
+              aria-label="Close menu"
+            >
+              ✕
+            </button>
+          </div>
         </div>
 
         <div className="border-b border-white/10 px-2 py-2">
@@ -53,7 +60,7 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
             className="flex w-full items-center gap-2 rounded-md bg-gold/15 px-3 py-2 text-left text-[13px] font-medium text-gold hover:bg-gold/20"
           >
             <span className="text-base">✦</span>
-            DFEAL AI assistant
+            {TENANT.assistantName}
           </button>
         </div>
 
@@ -77,7 +84,7 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
           ))}
         </nav>
 
-        <div className="border-t border-white/10 p-2">
+        <div className="space-y-1 border-t border-white/10 p-2">
           <Link
             href="/settings"
             onClick={onNavigate}
@@ -90,6 +97,18 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
           >
             Settings
           </Link>
+          <p className="px-3 py-1 text-[9px] leading-snug text-sidebar-muted">
+            {SMART_CAPTURE.copyright}
+            <br />
+            <a
+              href={SMART_CAPTURE.parentUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="hover:text-white"
+            >
+              {SMART_CAPTURE.parentCompany}
+            </a>
+          </p>
         </div>
       </aside>
     </>
