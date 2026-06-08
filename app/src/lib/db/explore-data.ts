@@ -37,34 +37,10 @@ function toCard(
   };
 }
 
-function isFederal(_id: string, source: string) {
-  return source === "sam" || _id.startsWith("sam-");
-}
-
-function isGrant(source: string, raw?: Record<string, unknown> | null) {
+function isGrantSource(source: string, raw?: Record<string, unknown> | null) {
   if (source === "grants_gov") return true;
-  if (source === "sba" && raw?.funding_type !== "sba_event") return true;
+  if (source === "sba") return raw?.funding_type === "sba_grant_program";
   return false;
-}
-
-function isStateLocal(id: string, source: string) {
-  if (isFederal(id, source)) return false;
-  if (isGrant(source)) return false;
-  return (
-    id.startsWith("bidbuy_il-") ||
-    id.startsWith("georgia-") ||
-    id.startsWith("ohio-") ||
-    id.startsWith("bonfire-") ||
-    id.startsWith("stateuniv_il-") ||
-    id.startsWith("education_il-") ||
-    source === "bidbuy_il" ||
-    source === "georgia" ||
-    source === "ohio" ||
-    source === "demandstar" ||
-    source === "bonfire" ||
-    source === "stateuniv_il" ||
-    source === "education_il"
-  );
 }
 
 export async function loadExplorePageData() {
@@ -80,16 +56,18 @@ export async function loadExplorePageData() {
 
   const dedupedHotRows = dedupeHotOpportunityRows(hotRows ?? []);
 
-  const hot = dedupedHotRows
-    .map((row) => {
-      const opp = dbRowToOpportunity(row);
-      return toCard(opp, {
-        fit_score: row.fit_score,
-        go_no_go: row.go_no_go,
-        score_rationale: row.score_rationale,
-      });
-    })
-    .filter((c) => c.category === "contract_opportunity");
+  const hot = dedupeOpportunityCards(
+    dedupedHotRows
+      .map((row) => {
+        const opp = dbRowToOpportunity(row);
+        return toCard(opp, {
+          fit_score: row.fit_score,
+          go_no_go: row.go_no_go,
+          score_rationale: row.score_rationale,
+        });
+      })
+      .filter((c) => c.category === "contract_opportunity"),
+  );
 
   const { data: recentRows, error: recentError } = await supabase
     .from("opportunities")
@@ -114,33 +92,66 @@ export async function loadExplorePageData() {
 
   const featured = recommended.slice(0, 5);
 
-  const withSource = (recentRows ?? []).map((row) => ({
-    card: toCard(dbRowToOpportunity(row)),
-    source: row.source as string,
-    id: row.id as string,
-    raw: row.raw_json as Record<string, unknown> | null,
-  }));
-
-  const contractRows = withSource.filter((r) => r.card.category === "contract_opportunity");
+  const [{ data: federalRows }, { data: stateRows }, { data: grantRows }] =
+    await Promise.all([
+      supabase
+        .from("opportunities")
+        .select("*")
+        .eq("status", "active")
+        .eq("source", "sam")
+        .order("posted_date", { ascending: false, nullsFirst: false })
+        .order("updated_at", { ascending: false })
+        .limit(40),
+      supabase
+        .from("opportunities")
+        .select("*")
+        .eq("status", "active")
+        .in("source", [
+          "bidbuy_il",
+          "georgia",
+          "ohio",
+          "bonfire",
+          "stateuniv_il",
+          "education_il",
+          "demandstar",
+        ])
+        .order("posted_date", { ascending: false, nullsFirst: false })
+        .order("updated_at", { ascending: false })
+        .limit(40),
+      supabase
+        .from("opportunities")
+        .select("*")
+        .eq("status", "active")
+        .in("source", ["grants_gov", "sba"])
+        .order("posted_date", { ascending: false, nullsFirst: false })
+        .order("updated_at", { ascending: false })
+        .limit(40),
+    ]);
 
   const federalItems = dedupeOpportunityCards(
-    contractRows
-      .filter((r) => isFederal(r.id, r.source))
-      .map((r) => r.card)
+    (federalRows ?? [])
+      .map((row) => toCard(dbRowToOpportunity(row)))
+      .filter((c) => c.category === "contract_opportunity")
       .sort((a, b) => (b.fit_score ?? 0) - (a.fit_score ?? 0)),
   ).slice(0, 4);
 
   const stateLocalItems = dedupeOpportunityCards(
-    contractRows
-      .filter((r) => isStateLocal(r.id, r.source))
-      .map((r) => r.card)
+    (stateRows ?? [])
+      .map((row) => toCard(dbRowToOpportunity(row)))
+      .filter((c) => c.category === "contract_opportunity")
       .sort((a, b) => (b.fit_score ?? 0) - (a.fit_score ?? 0)),
   ).slice(0, 4);
 
   const grantItems = dedupeOpportunityCards(
-    contractRows
-      .filter((r) => isGrant(r.source, r.raw))
-      .map((r) => r.card)
+    (grantRows ?? [])
+      .filter((row) =>
+        isGrantSource(
+          row.source as string,
+          row.raw_json as Record<string, unknown> | null,
+        ),
+      )
+      .map((row) => toCard(dbRowToOpportunity(row)))
+      .filter((c) => c.category === "contract_opportunity")
       .sort((a, b) => (b.fit_score ?? 0) - (a.fit_score ?? 0)),
   ).slice(0, 4);
 

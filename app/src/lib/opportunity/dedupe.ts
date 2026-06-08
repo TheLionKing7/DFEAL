@@ -2,22 +2,36 @@ import type { HotOpportunity } from "@/lib/db/database.types";
 import type { OpportunityCardData } from "@/components/opportunity/OpportunityCard";
 
 function normalizeTitle(title: string): string {
-  return title.trim().toLowerCase().replace(/\s+/g, " ");
+  return title
+    .trim()
+    .toLowerCase()
+    .replace(/[^\w\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
-/** Stable key for collapsing duplicate notices (same solicitation, different notice IDs). */
+function deadlineDay(value: string | null | undefined): string {
+  if (!value) return "";
+  return value.slice(0, 10);
+}
+
+/**
+ * Collapse duplicate notices that look the same in the UI (same title/deadline/agency).
+ * SAM often stores these as separate rows with different notice IDs and content hashes.
+ */
 export function opportunityDedupeKey(input: {
   id: string;
   title: string;
   response_deadline?: string | null;
   agency_name?: string | null;
-  content_hash?: string | null;
-  sam_url?: string | null;
+  naics?: string | null;
 }): string {
-  if (input.content_hash) return `hash:${input.content_hash}`;
-  const link = input.sam_url?.trim();
-  if (link) return `url:${link}`;
-  return `title:${normalizeTitle(input.title)}|${input.response_deadline ?? ""}|${(input.agency_name ?? "").trim().toLowerCase()}`;
+  return [
+    normalizeTitle(input.title),
+    deadlineDay(input.response_deadline),
+    (input.agency_name ?? "").trim().toLowerCase(),
+    input.naics ?? "",
+  ].join("|");
 }
 
 export function dedupeHotOpportunityRows<T extends HotOpportunity>(rows: T[]): T[] {
@@ -28,8 +42,7 @@ export function dedupeHotOpportunityRows<T extends HotOpportunity>(rows: T[]): T
       title: row.title,
       response_deadline: row.response_deadline,
       agency_name: row.agency_name,
-      content_hash: row.content_hash,
-      sam_url: row.sam_url ?? row.source_url,
+      naics: row.naics,
     });
     const existing = seen.get(key);
     if (!existing || row.fit_score > existing.fit_score) {

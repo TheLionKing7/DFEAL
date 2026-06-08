@@ -37,6 +37,7 @@ export async function listOpportunities(options: {
   limit?: number;
   offset?: number;
   source?: string;
+  sources?: string[];
   naics?: string;
   q?: string;
   marketTier?: string;
@@ -47,12 +48,14 @@ export async function listOpportunities(options: {
     .select("*")
     .eq("status", "active")
     .order("posted_date", { ascending: false, nullsFirst: false })
+    .order("updated_at", { ascending: false })
     .range(
       options.offset ?? 0,
       (options.offset ?? 0) + (options.limit ?? 25) - 1,
     );
 
-  if (options.source) query = query.eq("source", options.source);
+  if (options.sources?.length) query = query.in("source", options.sources);
+  else if (options.source) query = query.eq("source", options.source);
   if (options.naics) query = query.eq("naics", options.naics);
   if (options.marketTier) query = query.eq("market_tier", options.marketTier);
   if (options.q?.trim()) {

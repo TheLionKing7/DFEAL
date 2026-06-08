@@ -59,8 +59,12 @@ export default async function OpportunitiesPage({
         notice = "Grants ingest connectors are not live yet. Run POST /api/cron/ingest-grants.";
       }
 
-      const rows = await listOpportunities({ limit: 50, q });
-      const filtered = rows.filter((r) => sources.includes(r.source as (typeof sources)[number]));
+      const rows = await listOpportunities({ limit: 50, sources: [...sources], q });
+      const filtered = rows.filter(
+        (r) =>
+          sources.includes(r.source as (typeof sources)[number]) &&
+          (r.source !== "sba" || r.raw_data?.funding_type === "sba_grant_program"),
+      );
 
       if (filtered.length === 0 && live.length > 0) {
         notice =
