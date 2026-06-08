@@ -78,9 +78,26 @@ export default function DocumentsPage() {
         </Panel>
         <Panel title="Preview">
           {selected?.content_text ? (
-            <pre className="mt-3 max-h-[520px] overflow-auto whitespace-pre-wrap text-xs text-text-muted">
-              {selected.content_text}
-            </pre>
+            <>
+              <div className="mb-3 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium hover:border-gold/40"
+                  onClick={() => navigator.clipboard.writeText(selected.content_text ?? "")}
+                >
+                  Copy
+                </button>
+                <a
+                  href={`/api/documents/${selected.id}/download?format=pdf`}
+                  className="rounded-lg bg-sidebar px-3 py-1.5 text-xs font-medium text-white hover:bg-sidebar-surface"
+                >
+                  Download PDF
+                </a>
+              </div>
+              <pre className="max-h-[520px] overflow-auto whitespace-pre-wrap text-xs leading-relaxed text-text-muted">
+                {selected.content_text}
+              </pre>
+            </>
           ) : (
             <p className="mt-3 text-sm text-text-muted">Select a document to preview.</p>
           )}

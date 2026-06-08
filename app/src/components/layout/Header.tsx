@@ -57,7 +57,7 @@ export function Header({
           <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gold/10 text-gold">
             ✦
           </span>
-          <span className="hidden md:inline">AI consultant</span>
+          <span className="hidden md:inline">AI assistant</span>
         </button>
         <LinkSignOut />
         {alertCount > 0 && (

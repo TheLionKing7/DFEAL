@@ -6,16 +6,24 @@ import type { Opportunity } from "@/shared/types/opportunity";
 
 const SECTION_GUIDANCE: Record<DocumentType, string> = {
   executive_summary:
-    "Write a compelling executive summary for a federal proposal (1 page). Lead with DFEAL differentiators.",
+    "Write a compelling executive summary (1 page) as a senior capture specialist would. Lead with win themes and DFEAL differentiators. Use ## section headings.",
   technical_approach:
-    "Write a technical approach section aligned to the SOW/PWS. Use clear headings and actionable methodology.",
+    "Write a technical approach section aligned to the SOW/PWS. Use ## and ### headings, numbered methodology steps, and clear deliverables language.",
   past_performance:
-    "Write a past performance narrative citing DFEAL certifications and relevant NAICS experience.",
+    "Write a past performance narrative citing DFEAL certifications and relevant NAICS experience. Include contract-style references and measurable outcomes.",
   management_plan:
-    "Write a project management plan with staffing, QA, risk mitigation, and communication cadence.",
+    "Write a project management plan with staffing, QA, risk mitigation, and communication cadence. Use professional proposal tone with structured headings.",
   cover_letter:
-    "Write a professional cover letter to the contracting officer for this opportunity.",
+    "Write a formal cover letter to the contracting officer. Business letter format with date block, salutation, body paragraphs, and professional close.",
 };
+
+const FORMAT_RULES = [
+  "Write as a human federal proposal specialist — not generic AI filler.",
+  "Use clear markdown: # title, ## sections, ### subsections, bullet lists where appropriate.",
+  "Use active voice, specific agency/solicitation references, and compliance-aware language.",
+  "Avoid placeholders like [Company Name] — use DFEAL legal name and real profile details.",
+  "Target 800–1500 words unless the section type clearly needs less.",
+].join("\n");
 
 export async function generateProposalDocument(input: {
   opp: Opportunity;
@@ -39,7 +47,11 @@ export async function generateProposalDocument(input: {
     opp.description?.slice(0, 3000) ?? "(No description available)",
     "",
     `Write in professional proposal voice for ${DFEAL_PROFILE.legalName}.`,
-    "Output markdown only — no JSON wrapper.",
+    "",
+    "Formatting requirements:",
+    FORMAT_RULES,
+    "",
+    "Output markdown only — no JSON wrapper, no code fences.",
   ]
     .filter(Boolean)
     .join("\n");

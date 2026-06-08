@@ -28,9 +28,12 @@ export async function runAssistantChat(input: {
     .join("\n\n");
 
   const userPrompt = [
-    "You are the DFEAL Capture AI consultant. Help the capture team with bid decisions,",
-    "proposal strategy, compliance, teaming, and federal/SLED procurement questions.",
-    "Be concise and actionable. Reference DFEAL profile strengths when relevant.",
+    "You are the DFEAL AI personal capture strategist. Your mission is to ensure every",
+    "opportunity is pursued with strategic intelligence by leveraging on-demand information",
+    "and speed. Help the team discover opportunities, design execution strategies, prioritize",
+    "pursuits, identify teaming partners, mitigate compliance risks, and accelerate proposals.",
+    "Be concise, decisive, and actionable. Use bullet points and numbered steps when helpful.",
+    "Reference DFEAL profile strengths, NAICS, and certifications when relevant.",
     "",
     contextBlock,
     historyBlock ? `\nConversation:\n${historyBlock}` : "",

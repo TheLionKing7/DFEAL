@@ -555,7 +555,7 @@ export function OpportunityWorkspace({
           <Panel title="Document preview">
             {selectedDoc?.content ? (
               <>
-                <div className="mb-3 flex gap-2">
+                <div className="mb-3 flex flex-wrap gap-2">
                   <button
                     type="button"
                     className={btnSecondary}
@@ -563,6 +563,12 @@ export function OpportunityWorkspace({
                   >
                     Copy
                   </button>
+                  <a
+                    href={`/api/documents/${selectedDoc.id}/download?format=pdf`}
+                    className={btnPrimary}
+                  >
+                    Download PDF
+                  </a>
                 </div>
                 <pre className="max-h-[520px] overflow-auto whitespace-pre-wrap text-sm leading-relaxed text-text-muted">
                   {selectedDoc.content}
