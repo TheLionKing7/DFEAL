@@ -67,7 +67,21 @@ DFEAL/
 - **LLM providers** — **Claude (Anthropic) primary**, **Groq fallback** — server-side only; system prompts include DFEAL profile
 - **Cron/worker** — SAM ingest (15–60 min), SLED connectors, daily hot-opp digest
 
-## Phase plan
+## Implementation status (June 2026)
+
+The runnable app lives in **`../app/`** (Smart Capture on Vercel). This folder remains the **scope and design reference** from the original brief.
+
+| Phase | Progress | Notes |
+|-------|----------|-------|
+| 0 Foundation | Done | App scaffolded, Supabase, auth, DFEAL profile |
+| 1 Federal + surfacing | ~90% | SAM, scoring, Explore, digest, entity API; reports stubbed; UEI needs SAM verification |
+| 2 Documents + compliance | ~65% | Doc gen, compliance, assistant; export polish incomplete |
+| 3 SLED | ~70% | DemandStar + IL + Georgia live; Ohio stub |
+| 4 Intelligence | ~30% | Grants early; briefing UI; automations shell only |
+
+See **[../README.md](../README.md)** for the full remaining-work checklist and env setup.
+
+## Phase plan (original scope)
 
 ### Phase 1 — Federal core + daily surfacing (launch)
 
