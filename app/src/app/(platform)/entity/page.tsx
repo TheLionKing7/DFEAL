@@ -1,12 +1,149 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
+import { PageHeader, PageShell, Panel } from "@/components/layout/PageShell";
 import { DFEAL_PROFILE } from "@/config/dfeal-profile";
+import type { SamEntity } from "@/shared/types/entity";
+import { cn } from "@/shared/cn";
+
+type LookupMode = "id" | "name";
+
+interface LookupResponse {
+  entity?: SamEntity;
+  entities?: SamEntity[];
+  source?: string;
+  notice?: string;
+  error?: string;
+}
+
+function EntityCard({
+  entity,
+  notice,
+  source,
+}: {
+  entity: SamEntity;
+  notice?: string;
+  source?: string;
+}) {
+  return (
+    <Panel className="space-y-4">
+      {notice && (
+        <p className="rounded-lg border border-gold/30 bg-gold/[0.06] px-4 py-3 text-sm text-text">
+          {notice}
+        </p>
+      )}
+      {source === "profile_fallback" && (
+        <p className="text-xs uppercase tracking-wide text-text-muted">Profile on file</p>
+      )}
+
+      <div>
+        <h2 className="text-xl font-bold text-text">{entity.legal_name}</h2>
+        {entity.dba_name && (
+          <p className="mt-1 text-sm text-text-muted">DBA: {entity.dba_name}</p>
+        )}
+      </div>
+
+      <dl className="grid gap-3 sm:grid-cols-2">
+        <Field label="UEI" value={entity.uei} mono />
+        <Field label="CAGE" value={entity.cage ?? "—"} mono />
+        <Field
+          label="Registration"
+          value={entity.registration_status.replace("_", " ")}
+          badge={entity.registration_status}
+        />
+        <Field
+          label="Expiration"
+          value={
+            entity.expiration_date
+              ? new Date(entity.expiration_date).toLocaleDateString()
+              : "—"
+          }
+        />
+        {entity.physical_address && (
+          <Field
+            label="Location"
+            value={[entity.physical_address.city, entity.physical_address.state, entity.physical_address.zip]
+              .filter(Boolean)
+              .join(", ") || "—"}
+          />
+        )}
+      </dl>
+
+      {entity.naics_codes.length > 0 && (
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">NAICS</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {entity.naics_codes.map((code) => (
+              <span
+                key={code}
+                className="rounded bg-gold/15 px-2 py-0.5 text-xs font-medium text-gold"
+              >
+                {code}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <p className="text-xs text-text-muted">
+        Fetched {new Date(entity.fetched_at).toLocaleString()}
+        {source === "sam" && (
+          <>
+            {" "}
+            ·{" "}
+            <a
+              href={`https://sam.gov/entity/${entity.uei}/coreData`}
+              target="_blank"
+              rel="noreferrer"
+              className="text-gold hover:underline"
+            >
+              View on SAM.gov ↗
+            </a>
+          </>
+        )}
+      </p>
+    </Panel>
+  );
+}
+
+function Field({
+  label,
+  value,
+  mono,
+  badge,
+}: {
+  label: string;
+  value: string;
+  mono?: boolean;
+  badge?: string;
+}) {
+  return (
+    <div>
+      <dt className="text-xs font-semibold uppercase tracking-wide text-text-muted">{label}</dt>
+      <dd
+        className={cn(
+          "mt-1 text-sm font-medium text-text",
+          mono && "font-mono",
+          badge === "active" && "text-success",
+          badge === "expired" && "text-error",
+        )}
+      >
+        {value}
+      </dd>
+    </div>
+  );
+}
 
 export default function EntityPage() {
+  const [mode, setMode] = useState<LookupMode>("id");
   const [uei, setUei] = useState(DFEAL_PROFILE.uei);
   const [cage, setCage] = useState(DFEAL_PROFILE.cage);
-  const [result, setResult] = useState<Record<string, unknown> | null>(null);
+  const [name, setName] = useState("");
+  const [entity, setEntity] = useState<SamEntity | null>(null);
+  const [results, setResults] = useState<SamEntity[]>([]);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [source, setSource] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -14,15 +151,39 @@ export default function EntityPage() {
     event.preventDefault();
     setLoading(true);
     setError(null);
-    setResult(null);
+    setEntity(null);
+    setResults([]);
+    setNotice(null);
+    setSource(null);
+
     try {
       const params = new URLSearchParams();
-      if (uei.trim()) params.set("uei", uei.trim());
-      if (cage.trim()) params.set("cage", cage.trim());
+      if (mode === "name") {
+        if (!name.trim()) throw new Error("Enter a legal business name to search");
+        params.set("name", name.trim());
+      } else {
+        if (!uei.trim() && !cage.trim()) {
+          throw new Error("Enter a UEI or CAGE code");
+        }
+        if (uei.trim()) params.set("uei", uei.trim());
+        else if (cage.trim()) params.set("cage", cage.trim());
+      }
+
       const res = await fetch(`/api/entity?${params.toString()}`);
-      const data = await res.json();
+      const data = (await res.json()) as LookupResponse;
       if (!res.ok) throw new Error(data.error ?? "Lookup failed");
-      setResult(data);
+
+      if (data.entities?.length) {
+        setResults(data.entities);
+        setSource(data.source ?? "sam_search");
+        return;
+      }
+
+      if (data.entity) {
+        setEntity(data.entity);
+        setNotice(data.notice ?? null);
+        setSource(data.source ?? "sam");
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Lookup failed");
     } finally {
@@ -30,52 +191,134 @@ export default function EntityPage() {
     }
   }
 
+  function selectEntity(selected: SamEntity) {
+    setEntity(selected);
+    setResults([]);
+    setSource("sam_search");
+    setNotice(null);
+  }
+
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">SAM entity lookup</h1>
-        <p className="mt-2 text-text-muted">
-          Verify vendor registration status via SAM.gov Entity API.
-        </p>
+    <PageShell className="max-w-3xl">
+      <PageHeader
+        title="SAM entity lookup"
+        description="Verify vendor registration, NAICS, and active status via the SAM.gov Entity Management API."
+      />
+
+      <div className="flex gap-2">
+        {(
+          [
+            ["id", "UEI / CAGE"],
+            ["name", "Search by name"],
+          ] as const
+        ).map(([id, label]) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => setMode(id)}
+            className={cn(
+              "rounded-lg px-4 py-2 text-sm font-medium transition",
+              mode === id
+                ? "bg-sidebar text-white"
+                : "border border-border bg-bg-surface text-text-muted hover:text-text",
+            )}
+          >
+            {label}
+          </button>
+        ))}
       </div>
 
-      <form onSubmit={lookup} className="space-y-4 rounded-xl border border-border bg-bg-surface p-6">
-        <label className="block text-sm">
-          <span className="font-medium">UEI</span>
-          <input
-            value={uei}
-            onChange={(e) => setUei(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-border px-3 py-2"
-          />
-        </label>
-        <label className="block text-sm">
-          <span className="font-medium">CAGE code</span>
-          <input
-            value={cage}
-            onChange={(e) => setCage(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-border px-3 py-2"
-          />
-        </label>
+      <form onSubmit={lookup} className="mt-4 space-y-4 rounded-xl border border-border bg-bg-surface p-6">
+        {mode === "id" ? (
+          <>
+            <label className="block text-sm">
+              <span className="font-medium">UEI</span>
+              <input
+                value={uei}
+                onChange={(e) => setUei(e.target.value)}
+                placeholder="12-character Unique Entity ID"
+                className="mt-1 w-full rounded-lg border border-border px-3 py-2 font-mono text-sm"
+              />
+            </label>
+            <label className="block text-sm">
+              <span className="font-medium">CAGE code</span>
+              <span className="ml-2 text-xs text-text-muted">(use if UEI is blank)</span>
+              <input
+                value={cage}
+                onChange={(e) => setCage(e.target.value)}
+                placeholder="5-character CAGE"
+                className="mt-1 w-full rounded-lg border border-border px-3 py-2 font-mono text-sm"
+              />
+            </label>
+          </>
+        ) : (
+          <label className="block text-sm">
+            <span className="font-medium">Legal business name</span>
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Acme Corporation"
+              className="mt-1 w-full rounded-lg border border-border px-3 py-2"
+            />
+          </label>
+        )}
+
         <button
           type="submit"
           disabled={loading}
           className="rounded-lg bg-sidebar px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
         >
-          {loading ? "Looking up…" : "Lookup entity"}
+          {loading ? "Searching SAM.gov…" : mode === "name" ? "Search entities" : "Lookup entity"}
         </button>
       </form>
 
       {error && (
-        <p className="rounded-lg border border-error/30 bg-error/5 px-4 py-3 text-sm text-error">
+        <p className="mt-4 rounded-lg border border-error/30 bg-error/5 px-4 py-3 text-sm text-error">
           {error}
         </p>
       )}
 
-      {result && (
-        <pre className="overflow-auto rounded-xl border border-border bg-bg-surface p-4 text-xs">
-          {JSON.stringify(result, null, 2)}
-        </pre>
+      {results.length > 0 && (
+        <Panel className="mt-4 space-y-2">
+          <p className="text-sm font-semibold text-text">
+            {results.length} match{results.length === 1 ? "" : "es"} on SAM.gov
+          </p>
+          <ul className="divide-y divide-border">
+            {results.map((r) => (
+              <li key={`${r.uei}-${r.cage}`}>
+                <button
+                  type="button"
+                  onClick={() => selectEntity(r)}
+                  className="flex w-full flex-wrap items-center justify-between gap-2 py-3 text-left hover:bg-bg"
+                >
+                  <span>
+                    <span className="font-medium text-text">{r.legal_name}</span>
+                    <span className="mt-0.5 block text-xs text-text-muted">
+                      UEI {r.uei}
+                      {r.cage ? ` · CAGE ${r.cage}` : ""} · {r.registration_status}
+                    </span>
+                  </span>
+                  <span className="text-xs font-medium text-gold">View →</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </Panel>
       )}
-    </div>
+
+      {entity && (
+        <div className="mt-4">
+          <EntityCard entity={entity} notice={notice ?? undefined} source={source ?? undefined} />
+        </div>
+      )}
+
+      <p className="mt-6 text-xs text-text-muted">
+        Requires <code className="rounded bg-bg px-1">SAM_GOV_API_KEY</code> with Entity Management
+        API access.{" "}
+        <Link href="/settings" className="text-gold hover:underline">
+          Check platform settings →
+        </Link>
+      </p>
+    </PageShell>
   );
 }

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { OpportunityHoverActions } from "@/components/opportunity/OpportunityHoverActions";
 import { cn } from "@/shared/cn";
 
 export interface OpportunityCardData {
@@ -23,12 +24,15 @@ export function OpportunityCard({ opp }: { opp: OpportunityCardData }) {
   return (
     <article
       className={cn(
-        "rounded-xl border bg-bg-surface p-5 shadow-sm transition",
+        "group relative rounded-xl border bg-bg-surface p-5 shadow-sm transition",
         isEvent
           ? "border-dashed border-border/80"
           : "border-border hover:border-gold/30",
       )}
     >
+      {!isEvent && (
+        <OpportunityHoverActions opportunityId={opp.id} title={opp.title} className="absolute right-3 top-3" />
+      )}
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
           <Link

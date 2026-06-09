@@ -224,6 +224,68 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["chat_messages"]["Row"]>;
         Relationships: [];
       };
+      user_opportunity_lists: {
+        Row: {
+          id: string;
+          user_email: string;
+          opportunity_id: string;
+          list_type: string;
+          created_at: string;
+        };
+        Insert: {
+          user_email: string;
+          opportunity_id: string;
+          list_type: string;
+          id?: string;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["user_opportunity_lists"]["Row"]>;
+        Relationships: [];
+      };
+      user_assistant_settings: {
+        Row: {
+          user_email: string;
+          custom_instructions: string | null;
+          personalization: Json;
+          memories: Json;
+          connector_prefs: Json;
+          updated_at: string;
+        };
+        Insert: {
+          user_email: string;
+          custom_instructions?: string | null;
+          personalization?: Json;
+          memories?: Json;
+          connector_prefs?: Json;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["user_assistant_settings"]["Row"]>;
+        Relationships: [];
+      };
+      user_automations: {
+        Row: {
+          id: string;
+          user_email: string;
+          name: string;
+          enabled: boolean;
+          description: string | null;
+          config: Json;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          user_email: string;
+          name: string;
+          enabled?: boolean;
+          description?: string | null;
+          config?: Json;
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["user_automations"]["Row"]>;
+        Relationships: [];
+      };
     };
     Views: {
       hot_opportunities: {

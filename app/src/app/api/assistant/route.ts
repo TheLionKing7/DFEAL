@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { runAssistantChat } from "@/lib/ai/assistant";
 import { requireApiUser } from "@/lib/auth/api-user";
 import { appendChatMessage, createChatSession } from "@/lib/db/chat";
+import { getAssistantSettings, getFavoriteOpportunityIds } from "@/lib/db/user-workspace";
 import { isDatabaseConfigured } from "@/lib/db/supabase-admin";
 import type { AssistantPageContext } from "@/shared/assistant-page-context";
 
@@ -41,10 +42,19 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    const [settings, favoriteIds] = isDatabaseConfigured()
+      ? await Promise.all([
+          getAssistantSettings(user.email).catch(() => undefined),
+          getFavoriteOpportunityIds(user.email).catch(() => [] as string[]),
+        ])
+      : [undefined, [] as string[]];
+
     const { reply, provider } = await runAssistantChat({
       message: body.message.trim(),
       history: body.history ?? [],
       pageContext,
+      settings,
+      favoriteIds,
     });
 
     if (isDatabaseConfigured() && sessionId) {

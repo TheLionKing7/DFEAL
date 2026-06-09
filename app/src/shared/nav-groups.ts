@@ -39,6 +39,7 @@ export const NAV_GROUPS: NavGroup[] = [
     label: "Capture workspace",
     items: [
       { href: "/watchlist", label: "Pursuits" },
+      { href: "/automations", label: "Automations" },
       { href: "/documents", label: "Document generator" },
       { href: "/entity", label: "SAM entity lookup" },
     ],
@@ -47,6 +48,7 @@ export const NAV_GROUPS: NavGroup[] = [
     id: "reports",
     label: "Reports",
     items: [
+      { href: "/briefing", label: "Daily briefing" },
       { href: "/reports/digest", label: "Daily digest" },
       { href: "/reports/pipeline", label: "Pipeline summary" },
       { href: "/reports/scoring", label: "Scoring analytics" },
@@ -73,23 +75,23 @@ export const NAV_GROUPS: NavGroup[] = [
 
 export const ASSISTANT_PROMPTS = [
   {
-    title: "Strategic planning",
+    title: "Assess my best-fit opportunities this week",
     prompt:
-      "Review my current hot opportunities and design a capture execution strategy with go/no-go criteria, win themes, and a 2-week action plan for DFEAL.",
+      "Review federal, Illinois, and SLED hot opportunities scored for DFEAL. List the top 5 with [[opp:id|title]] links, go/no-go rationale, and deadlines in the next 14 days.",
   },
   {
-    title: "Opportunity discovery",
+    title: "Find my next capture targets",
     prompt:
-      "Find the next best Illinois, federal, and SLED opportunities aligned to DFEAL NAICS and certifications. Prioritize Illinois home-state bids first, then by fit score and deadline.",
+      "Generate a shortlist of the highest-value pursuits for DFEAL this month. Use [[opp:id|title]] for each recommendation and note set-aside, NAICS fit, and teaming needs.",
   },
   {
-    title: "Pursuit intelligence",
+    title: "Pursuit pipeline review",
     prompt:
-      "For opportunities in my pursuit pipeline, what teaming partners, compliance risks, and proposal gaps should we address first?",
+      "Review opportunities in my track list and pursuits. What should we advance, drop, or escalate this week?",
   },
   {
     title: "Proposal acceleration",
     prompt:
-      "Outline a proposal response strategy with section owners, compliance checklist, and document generation sequence for our top pursuit.",
+      "For my top hot opportunity, outline a proposal response plan with compliance checklist and document generation sequence.",
   },
 ];
