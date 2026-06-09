@@ -43,3 +43,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local connector probes (large downloaded assets)
+/scripts/demandstar-main.js
+/scripts/demandstar-routes-snippet.txt

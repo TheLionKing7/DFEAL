@@ -41,7 +41,6 @@ export function AssistantWorkspace({
   const [error, setError] = useState<string | null>(null);
   const [projectPanel, setProjectPanel] = useState<"none" | "track" | "favorite">("none");
   const [inlineAnalysis, setInlineAnalysis] = useState<{ id: string; title: string } | null>(null);
-  const searchRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const handleClose = onClose ?? closeAssistant;
@@ -162,7 +161,6 @@ export function AssistantWorkspace({
     <div className="flex h-full min-h-0 w-full overflow-hidden bg-bg">
       <AssistantSidebarNav
         onNewChat={startNewChat}
-        onSearchFocus={() => searchRef.current?.focus()}
         sessions={filteredSessions}
         sessionId={sessionId}
         onSelectSession={(id) => void loadSession(id)}

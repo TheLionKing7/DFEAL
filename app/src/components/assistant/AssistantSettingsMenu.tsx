@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { TENANT } from "@/config/platform";
 
@@ -229,10 +228,6 @@ export function AssistantSettingsMenu() {
           )}
         </div>
       )}
-
-      <Link href="/settings" className="mt-1 block px-3 py-1 text-[10px] text-text-muted hover:text-gold">
-        Platform settings →
-      </Link>
     </div>
   );
 }

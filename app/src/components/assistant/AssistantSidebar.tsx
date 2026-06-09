@@ -9,7 +9,6 @@ import { cn } from "@/shared/cn";
 
 export function AssistantSidebarNav({
   onNewChat,
-  onSearchFocus,
   sessions,
   sessionId,
   onSelectSession,
@@ -21,7 +20,6 @@ export function AssistantSidebarNav({
   favoriteItems,
 }: {
   onNewChat: () => void;
-  onSearchFocus?: () => void;
   sessions: { id: string; title: string | null; updated_at: string }[];
   sessionId: string | null;
   onSelectSession: (id: string) => void;
@@ -49,15 +47,53 @@ export function AssistantSidebarNav({
     return new Date(iso).toLocaleDateString();
   }
 
+  const projectItems = projectPanel === "track" ? trackItems : favoriteItems;
+
   return (
     <aside className="hidden shrink-0 flex-col border-r border-border bg-bg-surface md:flex md:w-56 lg:w-64">
       <div className="border-b border-border px-4 py-3">
         <p className="text-sm font-semibold text-text">{TENANT.assistantName}</p>
       </div>
 
-      <nav className="space-y-0.5 border-b border-border p-2">
+      {/* Section 1 — New chat, search, conversations */}
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden border-b border-border p-2">
         <SidebarNavButton icon="✎" label="New Chat" onClick={onNewChat} />
-        <SidebarNavButton icon="⌕" label="Search" onClick={onSearchFocus} />
+        <input
+          type="search"
+          value={search}
+          onChange={(e) => onSearchChange(e.target.value)}
+          placeholder="Search chats…"
+          className="mb-2 mt-1 w-full rounded-lg border border-border bg-bg px-3 py-1.5 text-xs"
+        />
+        <p className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-text-muted">
+          Chats
+        </p>
+        <ul className="mt-1 min-h-0 flex-1 space-y-0.5 overflow-y-auto">
+          {sessions.length === 0 && (
+            <li className="px-2 py-2 text-xs text-text-muted">No chats yet</li>
+          )}
+          {sessions.map((s) => (
+            <li key={s.id}>
+              <button
+                type="button"
+                onClick={() => onSelectSession(s.id)}
+                className={cn(
+                  "w-full rounded-md px-2 py-2 text-left text-xs",
+                  sessionId === s.id
+                    ? "bg-gold/10 font-medium text-gold"
+                    : "text-text-muted hover:bg-bg",
+                )}
+              >
+                <span className="line-clamp-2">{s.title ?? "New conversation"}</span>
+                <span className="mt-0.5 block text-[10px] opacity-70">{timeAgo(s.updated_at)}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {/* Section 2 — Briefing & automations */}
+      <nav className="space-y-0.5 border-b border-border p-2">
         <SidebarNavButton
           icon="◉"
           label="Daily Briefing"
@@ -72,6 +108,7 @@ export function AssistantSidebarNav({
         />
       </nav>
 
+      {/* Section 3 — Projects */}
       <div className="border-b border-border p-2">
         <p className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-text-muted">
           Projects
@@ -89,65 +126,22 @@ export function AssistantSidebarNav({
           active={projectPanel === "favorite"}
           onClick={() => onProjectPanelChange(projectPanel === "favorite" ? "none" : "favorite")}
         />
-      </div>
-
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-        {projectPanel !== "none" ? (
-          <div className="flex-1 overflow-y-auto p-2">
-            <p className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-text-muted">
-              {projectPanel === "track" ? "Tracked" : "Favourites"}
-            </p>
-            <ul className="mt-1 space-y-0.5">
-              {(projectPanel === "track" ? trackItems : favoriteItems).length === 0 && (
-                <li className="px-2 py-2 text-xs text-text-muted">No items yet</li>
-              )}
-              {(projectPanel === "track" ? trackItems : favoriteItems).map((item) => (
-                <li key={item.opportunity_id}>
-                  <Link
-                    href={`/opportunities/${item.opportunity_id}`}
-                    className="block rounded-md px-2 py-2 text-xs text-text-muted hover:bg-bg hover:text-text"
-                  >
-                    <span className="line-clamp-2">{item.title ?? item.opportunity_id}</span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ) : (
-          <div className="flex-1 overflow-y-auto p-2">
-            <input
-              type="search"
-              value={search}
-              onChange={(e) => onSearchChange(e.target.value)}
-              placeholder="Search chats…"
-              className="mb-2 w-full rounded-lg border border-border bg-bg px-3 py-1.5 text-xs"
-            />
-            <p className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-text-muted">
-              Chats
-            </p>
-            <ul className="mt-1 space-y-0.5">
-              {sessions.length === 0 && (
-                <li className="px-2 py-2 text-xs text-text-muted">No chats yet</li>
-              )}
-              {sessions.map((s) => (
-                <li key={s.id}>
-                  <button
-                    type="button"
-                    onClick={() => onSelectSession(s.id)}
-                    className={cn(
-                      "w-full rounded-md px-2 py-2 text-left text-xs",
-                      sessionId === s.id
-                        ? "bg-gold/10 font-medium text-gold"
-                        : "text-text-muted hover:bg-bg",
-                    )}
-                  >
-                    <span className="line-clamp-2">{s.title ?? "New conversation"}</span>
-                    <span className="mt-0.5 block text-[10px] opacity-70">{timeAgo(s.updated_at)}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
+        {projectPanel !== "none" && (
+          <ul className="mt-2 max-h-32 space-y-0.5 overflow-y-auto">
+            {projectItems.length === 0 && (
+              <li className="px-2 py-2 text-xs text-text-muted">No items yet</li>
+            )}
+            {projectItems.map((item) => (
+              <li key={item.opportunity_id}>
+                <Link
+                  href={`/opportunities/${item.opportunity_id}`}
+                  className="block rounded-md px-2 py-2 text-xs text-text-muted hover:bg-bg hover:text-text"
+                >
+                  <span className="line-clamp-2">{item.title ?? item.opportunity_id}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
         )}
       </div>
 
