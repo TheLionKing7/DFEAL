@@ -34,7 +34,7 @@ export interface DfealProfile {
   cage: string;
   duns?: string;
   samStatus: "active" | "expired" | "unknown";
-  samExpirationDate: string;
+  samExpirationDate: string | null;
   primaryNaics: string;
   secondaryNaics: string[];
   pscCodes: string[];
@@ -59,8 +59,8 @@ export const DFEAL_PROFILE: DfealProfile = {
   legalName: "DFEAL LLC",
   uei: "G1XCPA2ANMC3",
   cage: "15RT3",
-  samStatus: "active",
-  samExpirationDate: "verify-via-sam-gov",
+  samStatus: "unknown",
+  samExpirationDate: null,
   primaryNaics: "541611",
   secondaryNaics: ["541618", "541714", "541512", "561320", "423450"],
   pscCodes: [],

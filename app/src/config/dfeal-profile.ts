@@ -30,7 +30,8 @@ export interface DfealProfile {
   cage: string;
   duns?: string;
   samStatus: "active" | "expired" | "unknown";
-  samExpirationDate: string;
+  /** ISO date when known; null until confirmed via SAM.gov entity lookup */
+  samExpirationDate: string | null;
   primaryNaics: string;
   secondaryNaics: string[];
   pscCodes: string[];
@@ -56,8 +57,8 @@ export const DFEAL_PROFILE: DfealProfile = {
   uei: "G1XCPA2ANMC3",
   cage: "15RT3",
   duns: "11-926-8200",
-  samStatus: "active",
-  samExpirationDate: "verify-via-sam-gov",
+  samStatus: "unknown",
+  samExpirationDate: null,
   primaryNaics: "541611",
   secondaryNaics: ["541618", "541714", "541512", "561320", "423450"],
   pscCodes: [],

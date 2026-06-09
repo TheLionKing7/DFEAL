@@ -4,6 +4,10 @@ import Link from "next/link";
 import { useState } from "react";
 import { PageHeader, PageShell, Panel } from "@/components/layout/PageShell";
 import { DFEAL_PROFILE } from "@/config/dfeal-profile";
+import {
+  formatRegistrationLabel,
+  formatSamEntityDate,
+} from "@/lib/sam-gov/format-entity";
 import type { SamEntity } from "@/shared/types/entity";
 import { cn } from "@/shared/cn";
 
@@ -12,6 +16,7 @@ type LookupMode = "id" | "name";
 interface LookupResponse {
   entity?: SamEntity;
   entities?: SamEntity[];
+  suggestions?: SamEntity[];
   source?: string;
   notice?: string;
   error?: string;
@@ -34,7 +39,9 @@ function EntityCard({
         </p>
       )}
       {source === "profile_fallback" && (
-        <p className="text-xs uppercase tracking-wide text-text-muted">Profile on file</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-gold">
+          On-file profile — not verified by SAM.gov
+        </p>
       )}
 
       <div>
@@ -49,15 +56,15 @@ function EntityCard({
         <Field label="CAGE" value={entity.cage ?? "—"} mono />
         <Field
           label="Registration"
-          value={entity.registration_status.replace("_", " ")}
-          badge={entity.registration_status}
+          value={formatRegistrationLabel(entity.registration_status, source)}
+          badge={source === "profile_fallback" ? "unknown" : entity.registration_status}
         />
         <Field
           label="Expiration"
           value={
-            entity.expiration_date
-              ? new Date(entity.expiration_date).toLocaleDateString()
-              : "—"
+            source === "profile_fallback"
+              ? "Not verified — check SAM.gov"
+              : formatSamEntityDate(entity.expiration_date)
           }
         />
         {entity.physical_address && (
@@ -73,11 +80,14 @@ function EntityCard({
       {entity.naics_codes.length > 0 && (
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">NAICS</p>
+          <p className="mt-1 font-mono text-sm text-text">
+            {entity.naics_codes.join(" · ")}
+          </p>
           <div className="mt-2 flex flex-wrap gap-2">
             {entity.naics_codes.map((code) => (
               <span
                 key={code}
-                className="rounded bg-gold/15 px-2 py-0.5 text-xs font-medium text-gold"
+                className="rounded bg-gold/15 px-2 py-0.5 font-mono text-xs font-medium text-gold"
               >
                 {code}
               </span>
@@ -143,6 +153,7 @@ export default function EntityPage() {
   const [entity, setEntity] = useState<SamEntity | null>(null);
   const [results, setResults] = useState<SamEntity[]>([]);
   const [notice, setNotice] = useState<string | null>(null);
+  const [suggestions, setSuggestions] = useState<SamEntity[]>([]);
   const [source, setSource] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -154,6 +165,7 @@ export default function EntityPage() {
     setEntity(null);
     setResults([]);
     setNotice(null);
+    setSuggestions([]);
     setSource(null);
 
     try {
@@ -182,6 +194,7 @@ export default function EntityPage() {
       if (data.entity) {
         setEntity(data.entity);
         setNotice(data.notice ?? null);
+        setSuggestions(data.suggestions ?? []);
         setSource(data.source ?? "sam");
       }
     } catch (err) {
@@ -306,10 +319,57 @@ export default function EntityPage() {
         </Panel>
       )}
 
+      {suggestions.length > 0 && (
+        <Panel className="mt-4 space-y-2">
+          <p className="text-sm font-semibold text-text">
+            Possible SAM matches for {DFEAL_PROFILE.legalName}
+          </p>
+          <ul className="divide-y divide-border">
+            {suggestions.map((r) => (
+              <li key={`${r.uei}-${r.cage}`}>
+                <button
+                  type="button"
+                  onClick={() => selectEntity(r)}
+                  className="flex w-full flex-wrap items-center justify-between gap-2 py-3 text-left hover:bg-bg"
+                >
+                  <span>
+                    <span className="font-medium text-text">{r.legal_name}</span>
+                    <span className="mt-0.5 block text-xs text-text-muted">
+                      UEI {r.uei}
+                      {r.cage ? ` · CAGE ${r.cage}` : ""} · {r.registration_status}
+                    </span>
+                  </span>
+                  <span className="text-xs font-medium text-gold">Use this record →</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      )}
+
       {entity && (
         <div className="mt-4">
           <EntityCard entity={entity} notice={notice ?? undefined} source={source ?? undefined} />
         </div>
+      )}
+
+      {source === "profile_fallback" && (
+        <p className="mt-4 text-sm text-text-muted">
+          Verify registration at{" "}
+          <a
+            href="https://sam.gov/search/?index=entity&page=1&pageSize=25&sfm%5BsimpleSearch%5D%5BkeywordRadio%5D=ALL&sfm%5BsimpleSearch%5D%5BkeywordTag%5D=DFEAL"
+            target="_blank"
+            rel="noreferrer"
+            className="text-gold hover:underline"
+          >
+            SAM.gov entity search ↗
+          </a>
+          . If your UEI or CAGE changed, update them in{" "}
+          <Link href="/settings" className="text-gold hover:underline">
+            Settings
+          </Link>
+          .
+        </p>
       )}
 
       <p className="mt-6 text-xs text-text-muted">

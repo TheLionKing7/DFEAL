@@ -58,11 +58,19 @@ export async function GET(request: NextRequest) {
 
     const fallback = profileFallbackEntity(uei, cage);
     if (fallback) {
+      let suggestions: SamEntity[] = [];
+      try {
+        suggestions = await searchSamEntities({ name: DFEAL_PROFILE.legalName });
+      } catch {
+        /* optional */
+      }
+
       return NextResponse.json({
         entity: fallback,
         source: "profile_fallback",
+        suggestions,
         notice:
-          "SAM.gov has no active record for this UEI/CAGE. Showing DFEAL profile on file — confirm registration status at sam.gov.",
+          "SAM.gov returned no record for this UEI/CAGE. The card below is your on-file company profile only — not live SAM data. Search by legal name or confirm your registration at sam.gov, then update the UEI/CAGE in Settings.",
       });
     }
 
