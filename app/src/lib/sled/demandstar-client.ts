@@ -1,7 +1,8 @@
 import { createHash } from "crypto";
 
 const AUTH_BASE = "https://api.demandstar.com/auth/access/v1";
-const CONTRACT_API = "https://api.demandstar.com/contract/api";
+/** Supplier bid search uses the contents API base (not /contract/api). */
+const BIDS_API = "https://api.demandstar.com/contents/content/v1";
 const APP_BASE = "https://www.demandstar.com/app";
 
 export interface DemandStarAuthResult {
@@ -33,6 +34,27 @@ export interface DemandStarSearchResponse {
   parameters?: Record<string, unknown>;
 }
 
+function stripEmptyFields(body: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(body)) {
+    if (value === "" || value === null || value === undefined || value === false) continue;
+    out[key] = value;
+  }
+  return out;
+}
+
+async function readJsonResponse<T>(res: Response): Promise<T> {
+  const text = await res.text();
+  if (!text.trim()) {
+    throw new Error(`DemandStar returned empty response (${res.status})`);
+  }
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    throw new Error(`DemandStar returned non-JSON (${res.status}): ${text.slice(0, 200)}`);
+  }
+}
+
 function hashPassword(userName: string, password: string): string {
   const input = `${userName.toUpperCase()}${password}`;
   return createHash("md5").update(input).digest("hex");
@@ -60,7 +82,7 @@ export async function demandStarLogin(
     }),
   });
 
-  const data = (await res.json()) as DemandStarAuthResult & { error?: string };
+  const data = await readJsonResponse<DemandStarAuthResult & { error?: string }>(res);
   if (!res.ok) {
     throw new Error(data.errorMessage ?? data.error ?? `DemandStar login failed (${res.status})`);
   }
@@ -87,38 +109,21 @@ export async function demandStarSearchBids(
   token: string,
   filters: DemandStarSearchFilters = {},
 ): Promise<DemandStarSearchResponse> {
-  const body: Record<string, unknown> = {
+  const body = stripEmptyFields({
     showBids: filters.commodityMatches ? "Commodity" : "",
     filterOrdered: false,
-    location: "",
-    locationType: "",
-    radius: "",
-    industry: "",
     states: filters.states?.length ? filters.states.join(",") : "",
     bidStatus: filters.bidStatus ?? "AC",
-    bidIdentifier: "",
-    fiscalYear: "",
-    bidName: "",
-    agencyMemberId: "",
-    dueDateTime: "",
-    startDueDate: "",
-    endDueDate: "",
-    myBids: false,
-    includeExternalBids: false,
-    bidsNotified: false,
-    orderedBids: false,
-    watchedBids: false,
     commodityMatches: filters.commodityMatches ?? false,
-    ebiddingAvailable: false,
     sortBy: filters.sortBy ?? "broadCastDate",
     sortOrder: filters.sortOrder ?? "DESC",
     bidscurrentPage: filters.bidscurrentPage ?? 1,
     commodityExists: false,
     initialRequest: filters.initialRequest ?? false,
     preserveFilters: false,
-  };
+  });
 
-  const res = await fetch(`${CONTRACT_API}/bids/search`, {
+  const res = await fetch(`${BIDS_API}/bids/search`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -130,12 +135,26 @@ export async function demandStarSearchBids(
     body: JSON.stringify(body),
   });
 
-  const payload = (await res.json()) as { data?: DemandStarSearchResponse; error?: string; message?: string };
+  const payload = await readJsonResponse<
+    DemandStarSearchResponse & {
+      data?: DemandStarSearchResponse;
+      error?: string;
+      message?: string;
+      errors?: Record<string, string[]>;
+      title?: string;
+    }
+  >(res);
+
   if (!res.ok) {
-    throw new Error(payload.message ?? payload.error ?? `DemandStar bid search failed (${res.status})`);
+    const detail =
+      payload.title ??
+      payload.message ??
+      payload.error ??
+      (payload.errors ? JSON.stringify(payload.errors) : undefined);
+    throw new Error(detail ?? `DemandStar bid search failed (${res.status})`);
   }
 
-  return payload.data ?? (payload as unknown as DemandStarSearchResponse);
+  return payload.data ?? payload;
 }
 
 export function demandStarBidUrl(bidId: number | string): string {
