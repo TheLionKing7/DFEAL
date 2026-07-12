@@ -52,6 +52,7 @@ export interface DfealProfile {
 /** DFEAL operates from Illinois — home state gets capture priority in scoring and ingest */
 export const DFEAL_HOME_STATE = "IL";
 
+/** Team-confirmed SAM registration (June 2026). Entity API may return 0 until the record is public/synced. */
 export const DFEAL_PROFILE: DfealProfile = {
   legalName: "DFEAL LLC",
   uei: "G1XCPA2ANMC3",
@@ -64,7 +65,7 @@ export const DFEAL_PROFILE: DfealProfile = {
   pscCodes: [],
   certifications: [
     "Small Business (SB)",
-    "SAM.gov Registered & Active",
+    "SAM.gov registered (UEI/CAGE on file)",
     "Government Purchase Card (GPC) Accepted",
     "Project Management Professional (PMP)",
     "Certified ScrumMaster (CSM)",

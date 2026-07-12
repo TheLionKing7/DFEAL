@@ -1,8 +1,13 @@
+/**
+ * LLM provider orchestrator.
+ * Priority order: DeepSeek (primary) → Claude (fallback) → Groq (last resort).
+ */
+import { deepseekComplete } from "@/lib/ai/deepseek";
 import { claudeComplete } from "@/lib/ai/claude";
 import { groqComplete } from "@/lib/ai/groq";
-import { hasAnthropicApiKey, hasGroqApiKey } from "@/lib/env";
+import { hasDeepseekApiKey, hasAnthropicApiKey, hasGroqApiKey } from "@/lib/env";
 
-export type LlmProvider = "anthropic" | "groq";
+export type LlmProvider = "deepseek" | "anthropic" | "groq";
 
 export interface LlmCompleteResult {
   text: string;
@@ -15,6 +20,21 @@ export async function llmComplete(options: {
 }): Promise<LlmCompleteResult> {
   const errors: string[] = [];
 
+  // 1. DeepSeek — primary provider
+  if (hasDeepseekApiKey()) {
+    try {
+      const text = await deepseekComplete(options);
+      return { text, provider: "deepseek" };
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "DeepSeek request failed";
+      errors.push(`DeepSeek: ${message}`);
+    }
+  } else {
+    errors.push("DeepSeek: DEEPSEEK_API_KEY not configured");
+  }
+
+  // 2. Claude — first fallback
   if (hasAnthropicApiKey()) {
     try {
       const text = await claudeComplete(options);
@@ -28,6 +48,7 @@ export async function llmComplete(options: {
     errors.push("Claude: ANTHROPIC_API_KEY not configured");
   }
 
+  // 3. Groq — last resort fallback
   if (hasGroqApiKey()) {
     try {
       const text = await groqComplete(options);

@@ -1,0 +1,1251 @@
+						 
+			
+		<!doctype html>
+		<html class="no-js" lang="en">
+		
+			<head>
+				<meta charset="utf-8">
+				<title>Advanced Search for Notices | Illinois Higher Ed Bulletin</title>
+				<meta name="viewport" content="width=device-width, initial-scale=1">
+				<link rel="icon" type="image/x-icon" href="procureCommon/graphics/favicon.png">
+				
+				<link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&display=swap" crossorigin>  
+				
+				<link rel="stylesheet" type="text/css" href="procureCommon/css/pb-common.css?v=2025-10">
+				<link rel="stylesheet" type="text/css" href="css/pb-public.css?v=2025-10">
+				
+				<noscript>  
+					<link rel="stylesheet" type="text/css" href="procureCommon/css/nojs.css?v=2025-10">
+				</noscript>
+			<script src="webCommon/javascript/jquery/jquery-3.7.1.min.js?v=2025-10" type="text/javascript"></script><script src="procureCommon/javascript/pb-common-min.js?v=2025-10" type="text/javascript"></script><script id="skipToMinJS" src="webCommon/javascript/skipTo/skipTo-5.1.6/skipto-min.js"></script>
+						<script type="text/javascript" id="skipToScript">
+							var SkipToConfig = {
+							    "settings": {
+							        "skipTo": {
+							            colorTheme: "bulletin",
+										displayOption: "popup"
+							        }
+							    }
+							};
+						</script>
+					<script id="dataTablesMinJS" src="webCommon/javascript/datatables/DataTables-1.12.1/js/jquery.dataTables.min.js?v=2025-10" type="text/javascript"></script><link href="webCommon/javascript/datatables/DataTables-1.12.1/css/jquery.dataTables.css?v=2025-10" rel="stylesheet" type="text/css" /><script id="dataTablesButtonsMinJS" src="webCommon/javascript/datatables/extensions/Buttons-2.3.2/js/dataTables.buttons.min.js?v=2025-10" type="text/javascript"></script><script id="buttonsHtml5MinJS" src="webCommon/javascript/datatables/extensions/Buttons-2.3.2/js/buttons.html5.min.js?v=2025-10" type="text/javascript"></script><script id="jszipJS" src="webCommon/javascript/datatables/extensions/Buttons-2.3.2/js/jszip.min.js?v=2025-10" type="text/javascript"></script><script id="buttonsPrintMinJS" src="webCommon/javascript/datatables/extensions/Buttons-2.3.2/js/buttons.print.min.js?v=2025-10" type="text/javascript"></script><link href="webCommon/javascript/datatables/extensions/Buttons-2.3.2/css/buttons.dataTables.min.css?v=2025-10" rel="stylesheet" type="text/css" /><script id="dataTablesFixedHeaderMinJS" src="webCommon/javascript/datatables/extensions/FixedHeader-3.3.1/js/dataTables.fixedHeader.min.js?v=2025-10"></script><script id="dataTablesFixedHeaderAITSAccessibilityFixes" src="webCommon/javascript/datatables/extensions/FixedHeader-3.3.1/js/dataTables.fixedHeader.AITSAccessibilityFixes.js?v=2025-10"></script><link rel="stylesheet" href="webCommon/javascript/datatables/extensions/FixedHeader-3.3.1/css/fixedHeader.dataTables.min.css?v=2025-10"><link href="webCommon/javascript/datatables/DataTables-1.12.1/css/Datatable-AITS-Fix.css?v=2025-10" rel="stylesheet" type="text/css" /><link href="procureCommon/css/datatables-style-bulletin.css?v=2025-10" rel="stylesheet" type="text/css" /><script id="jqueryUiMinJS" src="webCommon/javascript/jquery/jquery-ui-1.13.2/jquery-ui.min.js?v=2025-10" type="text/javascript"></script><script id="jqueryUiWidgetMinJS" src="webCommon/javascript/jquery/jquery.ui.widget.min.js?v=2025-10" type="text/javascript"></script><link rel="stylesheet" href="webCommon/javascript/jquery/themes/jquery.ui.core.css?v=2025-10" type="text/css"><link rel="stylesheet" href="webCommon/javascript/jquery/themes/jquery.ui.theme.css?v=2025-10" type="text/css"><link rel="stylesheet" href="webCommon/javascript/jquery/jquery-ui-1.13.2/jquery-ui.min.css?v=2025-10" type="text/css"><script id="modalMinJS" src="procureCommon/javascript/modal-min.js?v=2025-10"></script>
+						<script type="text/javascript" id="clearFormScript">
+							function clearForm(formID, focusItemID) {
+								// clear out all input fields (except buttons, submits, and hidden fields) for the form
+								$(":input", "#"+formID).not(":button, :submit, :hidden, :checkbox, :radio").val("");
+								$(":checkbox","#"+formID).prop("checked", false);
+								$(":radio","#"+formID).prop("checked", false);
+
+								// clear out any select boxes back to the first option
+								$("select", "#"+formID).prop("selectedIndex", 0);
+								
+								// set focus to focusItem
+								$("#"+focusItemID).trigger("focus");			 
+							}
+						</script>
+					<script type="text/javascript" id="refreshPublicLogonScript">
+						$(document).ready(function() {
+							// check the sessionStorage for publicLoginState and reset the login/out buttons accordingly
+							if (sessionStorage.getItem("publicLoginState") != null){
+							 	if(sessionStorage.getItem("publicLoginState") === "loggedIn") {
+									// user is logged in - show logout
+							    	$("#publicLoginBtns").addClass("noDisplay");
+									$("#publicMobileLoginBtns").addClass("noDisplay");
+									
+									$("#publicLogoutBtns").removeClass("noDisplay");	
+							    	$("#publicMobileLogoutBtns").removeClass("noDisplay");	
+								}
+								else {
+									// user is logged out - show login
+									$("#publicLoginBtns").removeClass("noDisplay");
+									$("#publicMobileLoginBtns").removeClass("noDisplay");
+									
+									$("#publicLogoutBtns").addClass("noDisplay");
+									$("#publicMobileLogoutBtns").addClass("noDisplay");
+								}
+								// remove publicLoginState, it will not be needed again
+								sessionStorage.removeItem("publicLoginState"); 
+							}
+						}); //end of ready function
+					</script>
+					
+						<script type="text/javascript" id="slideToggleScript">
+							$(document).ready(function(){
+								$(".toggle").click(function(){
+									toggleContent(this);
+								});
+				
+								$(".toggle").keydown(function(event){
+									var key = event.which || event.keyCode;
+									if(key == 13) {
+										$(this).click();
+										event.preventDefault();
+									}
+								});
+							});
+							
+							function toggleContent(buttonClicked) {						
+								//getting the next element
+								var contentID = "#" + $(buttonClicked).attr("aria-controls");
+								//checking if its already visible
+								if ($(buttonClicked).attr("aria-expanded") === "true") {
+									$(buttonClicked).attr("aria-expanded", "false");
+								}
+								else {
+									$(buttonClicked).attr("aria-expanded", "true");
+								}
+								
+								$(contentID).slideToggle(0);
+								return false;
+							};
+						</script>
+					<script id="manageNigpDataScript" src="procureCommon/javascript/ManageNigpData.js?v=2025-10" type="text/javascript"></script><script id="navToInputErrorsJS" src="webCommon/javascript/goToErrsSuccsWarns/navToInputErrorsSuccessesWarnings.js?v=2025-10"  type="text/javascript"></script>	
+						<script type="text/javascript" id="popupScript">
+							$(document).ready(function() {
+								//Code for PopUP
+								$(".popup").click(function(event) {
+									
+									// add some extra code to prevent the link from actually working and opening a second window
+									event.preventDefault();
+									
+									var NWin = window.open($(this).prop("href"), "", "height=800,width=900,scrollbars=yes");
+									if (window.focus){
+										NWin.focus();
+									}
+									
+									return false;
+								});
+					
+							}); //end of ready function
+						</script>
+					
+						<script type="text/javascript" id="facetToggleScript">
+							//This function will display facets which were hidden
+							function expandFacet (facetName)
+							{
+								$(".openFacetListLink").each(function(){
+	        						var linkText = $(this).attr("href");
+	        						var newLinkText = linkText.replace("openFacetList=","openFacetList="+facetName+ "%2C");
+	        						$(this).attr("href",newLinkText );
+	    						});
+								var closedLIs = $("#" + facetName + " li.noDisplay");
+								closedLIs.each(function () {		            
+								     $(this).removeClass("noDisplay");
+								 });
+								// move focus to the 6th child
+								$("#"+facetName+" :nth-child(6) a").trigger("focus");	
+					
+							}
+							
+							$(document).ready(function(){	
+								// This functions populates the receipt types from the campus selector
+							    $(".facetToggle").click(function(event){
+									event.preventDefault();
+									
+									//getting the next element
+									var facetName = $(this).attr("aria-controls");											
+									expandFacet(facetName);
+									var moreLI = $("#"+facetName+ " li.facetToggleLI");
+									moreLI.addClass("noDisplay");
+									return false;
+								});
+			
+								$(".facetToggle").keydown(function(event){
+									var key = event.which || event.keyCode;
+									if(key == 13) {
+										$(this).click();
+									}
+									return false;
+								});
+							});//end of ready function
+						</script>
+					</head>
+			
+			<body>
+				
+			
+				<header class="header-main">
+					<div class="grid-container grid-gap-10">
+						<div class="cell col-8-sm col-7-md site-name">
+							<img class="inverse-logo" src="procureCommon/graphics/bulletin-logo-inverse.svg" alt="">
+        					<img class="logo" src="procureCommon/graphics/bulletin-logo.svg" alt="">
+							<a href="index.cfm"><span class="site-title">Illinois Procurement Bulletin</span>Public Institutions of Higher Education</a>
+							
+						</div>
+						<div class="cell col-5-md account button-group">
+							
+						 	<span id="publicLoginBtns">
+								<a href="account.cfm?mName=findCreateAccount" class="button hollow">Create Account</a>
+        				 		<a href="index.cfm?mName=findPublicLoginPage&refererPage=processAdvancedSearch&backCt=1" class="button primary">Log In</a>
+							</span>
+							<span id="publicLogoutBtns" class="noDisplay">
+								<a href="index.cfm?mName=processPublicLogoutForm&refererPage=processAdvancedSearch&backCt=1" class="button primary">Log Out</a>
+							</span>	
+						</div>
+						<div class="cell col-4-sm menu-btn">
+							<button class="mobile-nav-toggle">Menu</button>
+						</div>
+					</div>
+				</header>
+				
+				
+		
+		<nav aria-label="Main Navigation" class="navbar" id="mainnav">
+			<div class="grid-container grid-gap-10">
+				<div class="cell">
+					<ul class="navbar-links">
+						<li class="account-mobile">
+							
+							<ul id="publicMobileLoginBtns">
+									<li><a href="account.cfm?mName=findCreateAccount" class="button hollow-white">Create Account</a></li>
+        				 			<li><a href="index.cfm?mName=findPublicLoginPage&refererPage=processAdvancedSearch&backCt=1" class="button primary">Log In</a></li>
+							</ul>
+							<ul id="publicMobileLogoutBtns" class="noDisplay">	
+								<li><a href="index.cfm?mName=processPublicLogoutForm&refererPage=processAdvancedSearch&backCt=1" class="button primary">Log Out</a></li>
+							</ul>
+						</li>
+						<li>
+							<a href="index.cfm">Home</a>
+						</li>
+						<li class="has-submenu current"
+							aria-current="true"
+							>
+							<a href="search.cfm" aria-haspopup="true" aria-expanded="false">Search</a>
+							<ul>
+								<li aria-current="page"><a href="search.cfm?mName=findAdvancedSearch" class="current">Advanced Search</a></li>
+							</ul>
+						</li>
+						<li class="has-submenu"
+							>
+							<a href="about.cfm" aria-haspopup="true" aria-expanded="false">About the Bulletin</a>
+							<ul>
+								<li><a href="about.cfm?mName=findNewVendorGuide">Getting Started - New Vendor Guide</a></li>
+								<li><a href="about.cfm?mName=findBulletinGuide">Using the Bulletin</a></li>
+								<li><a href="about.cfm?mName=findParticipatingInstitutions">Participating Institutions</a></li>
+								<li><a href="about.cfm?mName=findIPHECPage">Illinois Public Higher Education Cooperative (IPHEC)</a></li>
+							</ul>
+						</li>
+						<li class="has-submenu"
+							>
+							<a href="resources.cfm" aria-haspopup="true" aria-expanded="false">Vendor Resources</a>
+							<ul>
+								<li><a href="resources.cfm?mName=findSupplierDiversity">Supplier Diversity and Other Business Programs</a></li>
+								<li><a href="resources.cfm?mName=findLawsRegulations">State Laws and Regulations</a></li>
+								<li><a href="resources.cfm?mName=findBidLimits">Bid Limits</a></li>
+								<li><a href="resources.cfm?mName=findGlossary">Glossary</a></li>
+								<li><a href="resources.cfm?mName=findNIGPList">NIGP Codes</a></li>
+							</ul>
+						</li>
+						<li>
+							<a href="ebid.cfm?mName=findEbidWorklist">My E-bids</a>
+						</li>
+						<li class="has-submenu"
+							>
+							<a href="news.cfm" aria-haspopup="true" aria-expanded="false">News and Announcements</a>
+							<ul>
+								<li><a href="news.cfm?mName=findCampaignContributionViolations">Campaign Contribution Violation</a></li>
+								<li><a href="news.cfm?mName=findConflictsOfInterest">Conflicts of Interest</a></li>
+								<li><a href="news.cfm?mName=findExemptions">Exemptions</a></li>
+								<li><a href="news.cfm?mName=findCPOwaivers">CPO Waivers</a></li>
+							</ul>
+						</li>
+						
+					</ul>
+				</div>
+			</div>
+		</nav>
+	
+				<main id="main">
+    
+		
+		
+		
+			<script id="removeJsonPreScr"  type="text/javascript">
+				$(document).ready(function(){
+					$.ajaxSetup({
+						dataFilter: function(data, type){
+							return type == "json" ? data.replace(/^(\/{2})?/, "") : data;
+						}
+					});
+				});
+			</script>
+		
+    	
+		
+			<script type="text/javascript">
+				$(document).ready(function(){
+					$("#clearSearchForm").on("click", function(){
+						// clear out all input fields (except buttons, submits, and hidden fields)
+						// set focus on searchTerm
+						clearForm("MainForm", "searchTerm");	
+						
+						//clear the NIGP code selections
+						$("#selectedNIGPCodes").val("");
+						$("#selectedNIGPCodeDisplay").html("<p>No NIGP Codes Selected</p>");
+						$("#modalSelectedNIGPCodeDisplay").html("<p>No NIGP Codes Selected</p>");
+					});	
+				});				
+			</script>   
+					
+			<div class="content-block blue-block">
+				<div class="grid-container grid-gap-10">
+					<div class="cell">
+						<h1>Search for procurement opportunities with Illinois public higher education institutions</h1>
+					</div>
+					<div class="cell search">
+						<form action="search.cfm#Results" method="post" enctype="multipart/form-data" id="MainForm" name="MainForm" role="search" aria-label="Search Notices Posted to Bulletin">
+							<input type="hidden" name="mName" id="mName" value="processAdvancedSearch">
+							<input type="hidden" name="pubTok" value="F1BAA0312FE4B52DA9E0098310B8F884C2B4CA43">
+	    					<span id="rt" class="noDisplay">94823A8F91BE622F19BE4589AFB63AD77E88CAE0</span>
+							
+							
+							
+							<div class="simple-search">
+								
+								<div class="question inlined">
+									
+									<label for="searchTerm">Keyword or procurement number:</label>
+									<input type="search" id="searchTerm" name="searchTerm"  class="lg-input" value="services">
+								</div>
+								<div class="button-group inlined">
+									<a href="search.cfm?mName=findBasicSearch">Simple Search</a>
+								</div>
+							</div>
+							
+							<div class="advanced-search" id="advSearchForm">
+								<div class="search-section">
+									<div class="question block-fieldset">
+										<fieldset class="radcheck">
+											<legend class="parent-legend">Notice Types</legend>
+											<div class="input-group">
+												
+													<div class="fieldset-group">
+														<p class="sublegend" id="sublegend_noticetype-competitive">Competitive Notices</p>
+														
+															<div>
+																<input type="checkbox" name="noticeType" value="Bid" id="Bid" aria-describedby="sublegend_noticetype-competitive"  >
+																<label for="Bid">Competitive Sealed Bid</label>
+															</div>
+														
+															<div>
+																<input type="checkbox" name="noticeType" value="Construction" id="Construction" aria-describedby="sublegend_noticetype-competitive"  >
+																<label for="Construction">Construction Bid</label>
+															</div>
+														
+															<div>
+																<input type="checkbox" name="noticeType" value="PA RFP" id="PARFP" aria-describedby="sublegend_noticetype-competitive"  >
+																<label for="PARFP">Professional and Artistic RFP</label>
+															</div>
+														
+															<div>
+																<input type="checkbox" name="noticeType" value="QBS" id="QBS" aria-describedby="sublegend_noticetype-competitive"  >
+																<label for="QBS">Request for Professional Services Qualifications (QBS)</label>
+															</div>
+														
+															<div>
+																<input type="checkbox" name="noticeType" value="RFI" id="RFI" aria-describedby="sublegend_noticetype-competitive"  >
+																<label for="RFI">Request for Information</label>
+															</div>
+														
+															<div>
+																<input type="checkbox" name="noticeType" value="RFP" id="RFP" aria-describedby="sublegend_noticetype-competitive" checked >
+																<label for="RFP">Request for Proposal</label>
+															</div>
+														
+															<div>
+																<input type="checkbox" name="noticeType" value="RPLease" id="RPLease" aria-describedby="sublegend_noticetype-competitive"  >
+																<label for="RPLease">Real Property Lease</label>
+															</div>
+														
+													</div>	
+												
+													<div class="fieldset-group">
+														<p class="sublegend" id="sublegend_noticetype-noncompetitive">Non-Competitive Notices</p>
+														
+															<div>
+																<input type="checkbox" name="noticeType" value="Concession" id="Concession" aria-describedby="sublegend_noticetype-noncompetitive"  >
+																<label for="Concession">Concession</label>
+															</div>
+														
+															<div>
+																<input type="checkbox" name="noticeType" value="Emergency" id="Emergency" aria-describedby="sublegend_noticetype-noncompetitive"  >
+																<label for="Emergency">Emergency</label>
+															</div>
+														
+															<div>
+																<input type="checkbox" name="noticeType" value="Exemption" id="Exemption" aria-describedby="sublegend_noticetype-noncompetitive"  >
+																<label for="Exemption">Exemption</label>
+															</div>
+														
+															<div>
+																<input type="checkbox" name="noticeType" value="GeneralAward" id="GeneralAward" aria-describedby="sublegend_noticetype-noncompetitive"  >
+																<label for="GeneralAward">General Award</label>
+															</div>
+														
+															<div>
+																<input type="checkbox" name="noticeType" value="On-Going" id="On-Going" aria-describedby="sublegend_noticetype-noncompetitive"  >
+																<label for="On-Going">On-Going</label>
+															</div>
+														
+															<div>
+																<input type="checkbox" name="noticeType" value="SoleSource" id="SoleSource" aria-describedby="sublegend_noticetype-noncompetitive"  >
+																<label for="SoleSource">Sole Source</label>
+															</div>
+														
+													</div>	
+												
+											</div>	
+										</fieldset>
+									</div>
+								</div>
+								
+								<div class="search-section">
+									<div class="question block-fieldset">
+	               						<fieldset class="radcheck">
+											<legend class="parent-legend">Notice Statuses</legend>
+											<div class="input-group">
+												
+													<div>
+														<input id="PublishedStatus" type="checkbox" name="noticeSearchStatus" value="Published" checked>
+														<label for="PublishedStatus">Published</label>
+													</div>
+												
+													<div>
+														<input id="AwardedStatus" type="checkbox" name="noticeSearchStatus" value="Awarded">
+														<label for="AwardedStatus">Awarded</label>
+													</div>
+												
+													<div>
+														<input id="CancelledStatus" type="checkbox" name="noticeSearchStatus" value="Cancelled">
+														<label for="CancelledStatus">Cancelled</label>
+													</div>
+												
+													<div>
+														<input id="Non-AwardedStatus" type="checkbox" name="noticeSearchStatus" value="Non-Awarded">
+														<label for="Non-AwardedStatus">Non-Awarded</label>
+													</div>
+												
+											</div>	
+										</fieldset>
+									</div>
+								</div>
+								
+								<div class="search-section">
+									<div class="question block-fieldset">
+						                <fieldset class="radcheck">
+							                <legend class="parent-legend">Institutions</legend>
+											<div class="input-group">
+												
+													<div class="fieldset-group">
+														<p class="sublegend inlined" id="regionNorth">North</p>
+														
+															<div>
+																<input type="checkbox" name="procuringInstitution" value="CSU" id="CSU" aria-describedby="regionNorth">
+																<label for="CSU">CSU</label>
+															</div>
+														
+															<div>
+																<input type="checkbox" name="procuringInstitution" value="GSU" id="GSU" aria-describedby="regionNorth">
+																<label for="GSU">GSU</label>
+															</div>
+														
+															<div>
+																<input type="checkbox" name="procuringInstitution" value="IMSA" id="IMSA" aria-describedby="regionNorth">
+																<label for="IMSA">IMSA</label>
+															</div>
+														
+															<div>
+																<input type="checkbox" name="procuringInstitution" value="NEIU" id="NEIU" aria-describedby="regionNorth">
+																<label for="NEIU">NEIU</label>
+															</div>
+														
+															<div>
+																<input type="checkbox" name="procuringInstitution" value="NIU" id="NIU" aria-describedby="regionNorth">
+																<label for="NIU">NIU</label>
+															</div>
+														
+															<div>
+																<input type="checkbox" name="procuringInstitution" value="UIC" id="UIC" aria-describedby="regionNorth" checked>
+																<label for="UIC">UIC</label>
+															</div>
+														
+													</div>	
+												
+													<div class="fieldset-group">
+														<p class="sublegend inlined" id="regionCentral">Central</p>
+														
+															<div>
+																<input type="checkbox" name="procuringInstitution" value="EIU" id="EIU" aria-describedby="regionCentral">
+																<label for="EIU">EIU</label>
+															</div>
+														
+															<div>
+																<input type="checkbox" name="procuringInstitution" value="ISU" id="ISU" aria-describedby="regionCentral">
+																<label for="ISU">ISU</label>
+															</div>
+														
+															<div>
+																<input type="checkbox" name="procuringInstitution" value="SIUMed" id="SIUMed" aria-describedby="regionCentral">
+																<label for="SIUMed">SIUMed</label>
+															</div>
+														
+															<div>
+																<input type="checkbox" name="procuringInstitution" value="UIS" id="UIS" aria-describedby="regionCentral">
+																<label for="UIS">UIS</label>
+															</div>
+														
+															<div>
+																<input type="checkbox" name="procuringInstitution" value="UIUC" id="UIUC" aria-describedby="regionCentral">
+																<label for="UIUC">UIUC</label>
+															</div>
+														
+															<div>
+																<input type="checkbox" name="procuringInstitution" value="UOCPRES" id="UOCPRES" aria-describedby="regionCentral">
+																<label for="UOCPRES">UOCPRES</label>
+															</div>
+														
+															<div>
+																<input type="checkbox" name="procuringInstitution" value="WIU" id="WIU" aria-describedby="regionCentral">
+																<label for="WIU">WIU</label>
+															</div>
+														
+													</div>	
+												
+													<div class="fieldset-group">
+														<p class="sublegend inlined" id="regionSouth">South</p>
+														
+															<div>
+																<input type="checkbox" name="procuringInstitution" value="SIUC" id="SIUC" aria-describedby="regionSouth">
+																<label for="SIUC">SIUC</label>
+															</div>
+														
+															<div>
+																<input type="checkbox" name="procuringInstitution" value="SIUE" id="SIUE" aria-describedby="regionSouth">
+																<label for="SIUE">SIUE</label>
+															</div>
+														
+													</div>	
+												
+													<div class="fieldset-group">
+														<p class="sublegend inlined" id="regionStatewide">Statewide</p>
+														
+															<div>
+																<input type="checkbox" name="procuringInstitution" value="CEI" id="CEI" aria-describedby="regionStatewide">
+																<label for="CEI">CEI</label>
+															</div>
+														
+															<div>
+																<input type="checkbox" name="procuringInstitution" value="CPO" id="CPO" aria-describedby="regionStatewide">
+																<label for="CPO">CPO</label>
+															</div>
+														
+															<div>
+																<input type="checkbox" name="procuringInstitution" value="IComp" id="IComp" aria-describedby="regionStatewide">
+																<label for="IComp">IComp</label>
+															</div>
+														
+															<div>
+																<input type="checkbox" name="procuringInstitution" value="IPHEC" id="IPHEC" aria-describedby="regionStatewide">
+																<label for="IPHEC">IPHEC</label>
+															</div>
+														
+															<div>
+																<input type="checkbox" name="procuringInstitution" value="ISOS" id="ISOS" aria-describedby="regionStatewide">
+																<label for="ISOS">ISOS</label>
+															</div>
+														
+															<div>
+																<input type="checkbox" name="procuringInstitution" value="UI" id="UI" aria-describedby="regionStatewide">
+																<label for="UI">UI</label>
+															</div>
+														
+													</div>	
+												
+											</div>
+										</fieldset>
+									</div>
+								</div>
+								
+								<div class="search-section">
+									<div class="nigp-codes">
+	                					<p class="parent-legend">NIGP Codes</p>
+										<input type="hidden" value="" name="selectedNIGPCodes" id="selectedNIGPCodes">
+										<div class="input-group">
+											<div class="accordion nigp-accordion small-accordion" id="selectedNIGPCodeDisplay">
+												
+													<p>No NIGP Codes Selected</p>	
+												
+											</div>	
+											<button class="button primary js-modal openManageNIGPModal" data-modal-prefix-class="simple" 
+													data-modal-content-id="nigp" data-modal-title="Manage NIGP Codes" 
+													data-modal-close-text="&times;" data-modal-close-title="Close modal" aria-haspopup="dialog">
+												Manage NIGP Codes
+											</button>
+											
+											<span class="noDisplay" id="nigpSearchStatus">All</span>
+										</div>	
+									</div>
+								</div>
+							
+								
+								
+								
+								<div class="search-section">
+									
+									<fieldset>
+	                					<legend class="parent-legend">Due Dates</legend>
+										<div class="input-group">
+											<div class="question inlined">
+												
+												<label for="dueDateFrom">From Date:</label>
+												<input type="date" id="dueDateFrom" name="dueDateFrom" value="">
+											</div>
+											
+											
+											<div class="question inlined">
+												
+												<label for="dueDateTo">To Date:</label>
+												<input type="date" id="dueDateTo" name="dueDateTo" value="">
+											</div>
+										</div>	
+									</fieldset>
+								</div>
+								
+								<div class="button-group">
+									<input type="submit" name="submit" value="Search" class="button accent" id="advSearchBtn">
+									<button id="clearSearchForm" value="clear-form" class="button hollow" type="button">Clear Form</button>
+								</div>
+							</div>
+						</form>
+					</div>
+				</div>
+			</div>					  
+								   
+			
+			
+		<script type="text/javascript">
+			$(document).ready(function(){
+				$("#sort").on("change", function(){
+					var sortingURL = $("#sortingURL").attr("href");
+					var sort = $("#sort").val();
+					
+					var newURL = sortingURL + "&sort=" + sort + "#Results";
+					location.href = newURL;
+				});
+			})
+		</script>
+		
+		
+			
+		<div class="content-block" id="Results">
+			<div class="grid-container grid-gap-10">
+				
+					<div class="cell search-header">
+						<div class="grid-container grid-gap-10">
+							<div class="cell col-4-md">
+								<h2>Search Results</h2>
+								<a href="#notices" class="skip-subnav hidden">Skip Filters</a>
+							</div>								
+							<div class="cell col-8-md search-header-controls">
+								<form>
+									<label for="sort">Sort by:</label>
+									<select name="sort" id="sort" class="inlined">
+										<option value="relevance">Relevancy</option>
+										<option value="lastModifiedDate" selected>Date</option>
+									</select>
+									<a class="noDisplay openFacetListLink" href="search.cfm?mName=processAdvancedSearch&openFacetList=" name="sortingURL" id="sortingURL"></a>
+								</form>
+								
+								<p>
+									Results 1 - 10
+									of 14
+								</p>
+							</div>
+						</div>
+					</div>
+					
+					
+				
+					<div class="cell"> 
+						<div class="grid-container grid-gap-30">
+						
+							<div class="cell col-4-md col-3-lg filters">
+								<h3 class="filter-header">Narrow Your Results</h3>
+								
+								
+										<div class="filter-section">
+											<h4>Status</h4>
+											
+												<button class="button primary round js-modal" data-modal-prefix-class="simple" 
+														data-modal-content-id="status_def" data-modal-title="Status Definitions" 
+														data-modal-close-text="&times;" data-modal-close-title="Close modal" aria-haspopup="dialog">
+													<span class="hidden">Learn more about the different status meanings</span>?
+												</button>
+                							
+											<ul id="noticeSearchStatus">
+																																				
+													<li>
+														
+															<a href="search.cfm?mName=processAdvancedSearch&openFacetList=&selectedFilters=noticeSearchStatus%3BPublished#Results" class="openFacetListLink">Published</a> (14) 
+															
+													</li>
+													
+											</ul>
+										</div>
+									
+										<div class="filter-section">
+											<h4>Notice Type</h4>
+											
+												<button class="button primary round js-modal" data-modal-prefix-class="simple" 
+														data-modal-content-id="noticeType_def" data-modal-title="Notice Type Definitions" 
+														data-modal-close-text="&times;" data-modal-close-title="Close modal" aria-haspopup="dialog">
+													<span class="hidden">Learn more about the different notice types</span>?
+												</button>
+                							
+											<ul id="noticeType">
+																																				
+													<li>
+														
+															<a href="search.cfm?mName=processAdvancedSearch&openFacetList=&selectedFilters=noticeType%3BRFP#Results" class="openFacetListLink">RFP</a> (14) 
+															
+													</li>
+													
+											</ul>
+										</div>
+									
+										<div class="filter-section">
+											<h4>Region</h4>
+											
+											<ul id="procuringRegion">
+																																				
+													<li>
+														
+															<a href="search.cfm?mName=processAdvancedSearch&openFacetList=&selectedFilters=procuringRegion%3BNorth#Results" class="openFacetListLink">North</a> (14) 
+															
+													</li>
+													
+											</ul>
+										</div>
+									
+										<div class="filter-section">
+											<h4>Institution</h4>
+											
+											<ul id="procuringInstitution">
+																																				
+													<li>
+														
+															<a href="search.cfm?mName=processAdvancedSearch&openFacetList=&selectedFilters=procuringInstitution%3BUIC#Results" class="openFacetListLink">UIC</a> (14) 
+															
+													</li>
+													
+											</ul>
+										</div>
+									
+							</div>
+						
+							<div id="notices" class="cell col-8-md col-9-lg">
+								<div class="grid-container grid-gap-10">
+									
+										
+										<div class="cell notice-preview">
+											<div class="notice-summary">
+												<p class="procurement-number">#IJW135</p>
+												<h3>
+													<a href="viewNotice.cfm?mName=findNotice&i=UIC&p=IJW135">
+														Request for Proposal: Graduate Student Marketing &amp; Recruitment Solution
+													</a>
+												</h3>
+												<p class="instution">UIC</p>
+												<p>#IJW135: Graduate Student Marketing &amp; Recruitment SolutionUniversity of Illinois at Chicago
+RFP #IJW135
+Request for Proposal: Graduate Student Marketing &amp; Recruitment Solution
+
+First published Tuesday, June 2, 2026 
+
+Sealed proposals will be accepted below until 2:00 PM, Tuesday, June 30, 2026:
+At the following address:  Purchasing Division (M/C 560)
+809 South Marshfield Avenue Chicago, IL 60612 
+via E-bidding
+
+The UIC College of Business is seeking a vendor with expertise in graduate studen...</p>
+											</div>
+											<div class="notice-meta">
+												
+													<p class="notice-status status-published">
+														Published
+													</p>
+												
+														<p><strong>Due Date: </strong>06/30/2026</p>
+													
+													<p><strong>Last Updated: </strong>06/02/2026</p>
+												
+													<p><strong>Published: </strong>06/02/2026</p>
+												
+											</div>
+										</div>
+									
+										
+										<div class="cell notice-preview">
+											<div class="notice-summary">
+												<p class="procurement-number">#EWM196</p>
+												<h3>
+													<a href="viewNotice.cfm?mName=findNotice&i=UIC&p=EWM196">
+														Request for Proposal: Integrated Community-Database and Referral System
+													</a>
+												</h3>
+												<p class="instution">UIC</p>
+												<p>#EWM196: Integrated Community-Database and Referral SystemUniversity of Illinois at Chicago
+RFP #EWM196
+Request for Proposal: Integrated Community-Database and Referral System
+
+First published Monday, May 18, 2026 
+
+Sealed proposals will be accepted below until 2:00 PM, Monday, July 13, 2026:
+At the following address:  Purchasing Division (M/C 560)
+809 South Marshfield Avenue Chicago, IL 60612 
+via E-bidding
+
+The University of Illinois Chicago has a unique need for an integrated community re...</p>
+											</div>
+											<div class="notice-meta">
+												
+													<p class="notice-status status-published">
+														Published
+													</p>
+												
+														<p><strong>Due Date: </strong>07/13/2026</p>
+													
+													<p><strong>Last Updated: </strong>05/18/2026</p>
+												
+													<p><strong>Published: </strong>05/18/2026</p>
+												
+											</div>
+										</div>
+									
+										
+										<div class="cell notice-preview">
+											<div class="notice-summary">
+												<p class="procurement-number">#BJB136</p>
+												<h3>
+													<a href="viewNotice.cfm?mName=findNotice&i=UIC&p=BJB136">
+														Request for Proposal: UI Health Supply Chain ERP Solution
+													</a>
+												</h3>
+												<p class="instution">UIC</p>
+												<p>#BJB136: UI Health Supply Chain ERP SolutionUniversity of Illinois at Chicago
+RFP #BJB136
+Request for Proposal: UI Health Supply Chain ERP Solution
+
+This notice has been modified Published Monday, April 27, 2026
+Download addendum 1 to see revised RFP dates. The RFP due date has been changed to June 25, 2026 at 2:00 PM CST. The Pre-Submission Conference date has been changed to May 20, 2026 at 11:00 AM CST.
+First published Wednesday, April 22, 2026 
+
+Sealed proposals will be accepted below un...</p>
+											</div>
+											<div class="notice-meta">
+												
+													<p class="notice-status status-published">
+														Published
+													</p>
+												
+														<p><strong>Due Date: </strong>06/25/2026</p>
+													
+													<p><strong>Last Updated: </strong>04/27/2026</p>
+												
+													<p><strong>Published: </strong>04/22/2026</p>
+												
+											</div>
+										</div>
+									
+										
+										<div class="cell notice-preview">
+											<div class="notice-summary">
+												<p class="procurement-number">#PPA114</p>
+												<h3>
+													<a href="viewNotice.cfm?mName=findNotice&i=UIC&p=PPA114">
+														Request for Proposal: Water Treatment Chemicals and Service
+													</a>
+												</h3>
+												<p class="instution">UIC</p>
+												<p>#PPA114: Water Treatment Chemicals and ServiceUniversity of Illinois at Chicago
+RFP #PPA114
+Request for Proposal: Water Treatment Chemicals and Service
+
+This notice has been modified Published Tuesday, November 11, 2025
+Please see Addendum No. 4 which changes the proposal due date to November 20, 2025 at 11:00 a.m. CST and revises Attachment D - PPA114 Pricing Proposal.
+This notice has been modified Published Thursday, October 30, 2025
+Please see Addendum No. 3 which responds to vendor's que...</p>
+											</div>
+											<div class="notice-meta">
+												
+													<p class="notice-status status-published">
+														Published
+													</p>
+												
+														<p><strong>Due Date: </strong>11/20/2025</p>
+													
+													<p><strong>Last Updated: </strong>11/11/2025</p>
+												
+													<p><strong>Published: </strong>08/20/2025</p>
+												
+											</div>
+										</div>
+									
+										
+										<div class="cell notice-preview">
+											<div class="notice-summary">
+												<p class="procurement-number">#AJR005</p>
+												<h3>
+													<a href="viewNotice.cfm?mName=findNotice&i=UIC&p=AJR005">
+														Request for Proposal: Integrated Direct Marketing Program
+													</a>
+												</h3>
+												<p class="instution">UIC</p>
+												<p>design and copy writing; printing; data processing; mailing <span class='searchTermEmphasis'>services</span>; and component storage for the UIC Office of Annual Givingâs...</p>
+											</div>
+											<div class="notice-meta">
+												
+													<p class="notice-status status-published">
+														Published
+													</p>
+												
+														<p><strong>Due Date: </strong>07/23/2012</p>
+													
+													<p><strong>Last Updated: </strong>07/06/2012</p>
+												
+													<p><strong>Published: </strong>05/23/2012</p>
+												
+											</div>
+										</div>
+									
+										
+										<div class="cell notice-preview">
+											<div class="notice-summary">
+												<p class="procurement-number">#AJR001</p>
+												<h3>
+													<a href="viewNotice.cfm?mName=findNotice&i=UIC&p=AJR001">
+														Request for Proposal: Marketing Design Services
+													</a>
+												</h3>
+												<p class="instution">UIC</p>
+												<p>AJR001: Marketing Design <span class='searchTermEmphasis'>Services</span>University of Illinois at Chicago
+RFP...Proposal: Marketing Design <span class='searchTermEmphasis'>Services</span>
+
+This notice has been modified...for marketing design <span class='searchTermEmphasis'>services</span> for University of Illinois</p>
+											</div>
+											<div class="notice-meta">
+												
+													<p class="notice-status status-published">
+														Published
+													</p>
+												
+														<p><strong>Due Date: </strong>10/28/2011</p>
+													
+													<p><strong>Last Updated: </strong>10/21/2011</p>
+												
+													<p><strong>Published: </strong>09/28/2011</p>
+												
+											</div>
+										</div>
+									
+										
+										<div class="cell notice-preview">
+											<div class="notice-summary">
+												<p class="procurement-number">#NFK007</p>
+												<h3>
+													<a href="viewNotice.cfm?mName=findNotice&i=UIC&p=NFK007">
+														Request for Proposal: UIC Athletics Merchandise Concession
+													</a>
+												</h3>
+												<p class="instution">UIC</p>
+												<p>Office of Business Development <span class='searchTermEmphasis'>Services</span> (OBDS)
+809 South Marshfield Avenue
+6...answer questions regarding the <span class='searchTermEmphasis'>services</span> requested or proposal procedures. 
+
+For</p>
+											</div>
+											<div class="notice-meta">
+												
+													<p class="notice-status status-published">
+														Published
+													</p>
+												
+														<p><strong>Due Date: </strong>10/14/2011</p>
+													
+													<p><strong>Last Updated: </strong>09/21/2011</p>
+												
+													<p><strong>Published: </strong>09/21/2011</p>
+												
+											</div>
+										</div>
+									
+										
+										<div class="cell notice-preview">
+											<div class="notice-summary">
+												<p class="procurement-number">#RPP992</p>
+												<h3>
+													<a href="viewNotice.cfm?mName=findNotice&i=UIC&p=RPP992">
+														Request for Proposal: Medical and Ambulance Services
+													</a>
+												</h3>
+												<p class="instution">UIC</p>
+												<p>RPP992: Medical and Ambulance <span class='searchTermEmphasis'>Services</span>University of Illinois at Chicago
+RFP #RPP992
+Request...Medical and Ambulance <span class='searchTermEmphasis'>Services</span>
+
+This notice has been modified Published</p>
+											</div>
+											<div class="notice-meta">
+												
+													<p class="notice-status status-published">
+														Published
+													</p>
+												
+														<p><strong>Due Date: </strong>06/02/2011</p>
+													
+													<p><strong>Last Updated: </strong>05/25/2011</p>
+												
+													<p><strong>Published: </strong>05/10/2011</p>
+												
+											</div>
+										</div>
+									
+										
+										<div class="cell notice-preview">
+											<div class="notice-summary">
+												<p class="procurement-number">#RPP991</p>
+												<h3>
+													<a href="viewNotice.cfm?mName=findNotice&i=UIC&p=RPP991">
+														Request for Proposal: Dental Laboratory Services
+													</a>
+												</h3>
+												<p class="instution">UIC</p>
+												<p>RPP991: Dental Laboratory <span class='searchTermEmphasis'>Services</span> University of Illinois...Proposal: Dental Laboratory <span class='searchTermEmphasis'>Services</span> 
+
+This notice has...to retain the <span class='searchTermEmphasis'>services</span> from qualified firms...provide dental laboratory <span class='searchTermEmphasis'>services</span> for the College of...questions regarding the <span class='searchTermEmphasis'>services</span> requested or 
+proposal</p>
+											</div>
+											<div class="notice-meta">
+												
+													<p class="notice-status status-published">
+														Published
+													</p>
+												
+														<p><strong>Due Date: </strong>05/20/2011</p>
+													
+													<p><strong>Last Updated: </strong>05/11/2011</p>
+												
+													<p><strong>Published: </strong>03/09/2011</p>
+												
+											</div>
+										</div>
+									
+										
+										<div class="cell notice-preview">
+											<div class="notice-summary">
+												<p class="procurement-number">#NFK006</p>
+												<h3>
+													<a href="viewNotice.cfm?mName=findNotice&i=UIC&p=NFK006">
+														Request for Proposal: Univ. Village Marketplace Bookstore Concession
+													</a>
+												</h3>
+												<p class="instution">UIC</p>
+												<p>Office of Business Development <span class='searchTermEmphasis'>Services</span> (OBDS)
+809 South Marshfield Avenue
+6...Affairs/Campus Auxiliary <span class='searchTermEmphasis'>Services</span> ("University") is seeking proposals from</p>
+											</div>
+											<div class="notice-meta">
+												
+													<p class="notice-status status-published">
+														Published
+													</p>
+												
+														<p><strong>Due Date: </strong>04/29/2011</p>
+													
+													<p><strong>Last Updated: </strong>04/20/2011</p>
+												
+													<p><strong>Published: </strong>03/16/2011</p>
+												
+											</div>
+										</div>
+									
+								</div>
+							
+										
+			<div class="pagination">
+				<p>
+					
+				
+					
+					
+						<span class="hidden">Select a Result Page</span>
+					
+						<a href="search.cfm?mName=processAdvancedSearch&openFacetList=&start=0#Results" class="current" aria-current="true" aria-label="Go to Page 1">1</a>
+					
+						<a href="search.cfm?mName=processAdvancedSearch&openFacetList=&start=10#Results" aria-label="Go to Page 2">2</a>
+					
+						<a href="search.cfm?mName=processAdvancedSearch&openFacetList=&start=10#Results" aria-label="Go to Next Page">Next</a>
+					
+				</p>
+			</div>
+			
+							</div>
+						
+						</div>
+					</div>
+					
+			</div>
+		</div>
+		
+	    
+			<div id="status_def" class="hidden reveal modal-body" role="dialog">
+				<p>Procurement Notices can be in one of four statuses.</p>
+				<ul>
+					<li>Published - Notice is a current procurement opportunity for vendors.</li>
+					<li>Awarded - A procurement opportunity that has been awarded.</li>
+					<li>Cancelled - A procurement opportunity that has been cancelled prior to the opening date.</li>
+					<li>Non-Awarded - A procurement opportunity that was determined after the opening date to not be awarded.</li> 
+				</ul>
+			</div>
+			
+			<div id="noticeType_def" class="hidden reveal modal-body" role="dialog">
+				<p>Procurement notices can be either Competitive or Non-Competitive.</p>
+				<p>Competitive Notices are an open and competitive procurement opportunity for vendors. Examples include, but are not limited to IFB, RFP, QBS, RFI-RP, and PA-RFP.</p> 
+				<p>Non-Competitive notices are for publishing an intent to award based on a specific procurement method. Examples include, but are not limited to Sole Source, Emergency, General Award, and Exemption.</p>	
+				<p>More specific information on the notice types can be found in the <a href="resources.cfm?mName=findGlossary">Glossary</a>.</p>				
+			</div> 
+		 		
+    	
+		
+		<div id="nigp" class="noDisplay reveal modal-body" role="dialog">
+			<form class="grid-container grid-gap-10 push-bottom">
+				<div class="cell nigp-header"> 
+					
+					
+						<h2><span id="nigpLookupHeader">Search</span> for NIGP Codes to add to your email notification settings.</h2>
+						<p>
+							You'll receive notifications when a notice tagged with any of your selected NIGP Codes is posted on the Bulletin.  
+							<span id="nigpSearchInstructions"><br>Enter either the known NIGP code or terms describing the goods/services your company provides.</span>
+						</p>
+					
+				</div>
+				
+				<div class="cell">
+        			<div class="grid-container grid-gap-30">
+						<div id="nigpModalTechError" class="cell attn-box attn-page-error noDisplay">
+							<div class="attn-img"><p class="hidden">Alert!</p></div>
+							<div id="jsCriticalErrorMessage" class="attn-mssg">
+								<p>An error has occurred while processing your request.  Please notify the Bulletin Manager as soon as possible at (217) 333-3596 or <a href='mailto:cpowebmaster@uillinois.edu'>cpowebmaster@uillinois.edu</a>.</p>
+							</div>
+						</div>
+						
+						<div class="cell col-6-md col-7-lg">
+	
+							<div class="cell question" id="nigpLookupForm">
+								<div class="inlined push-right" id="nigpSearchTermQuestion">
+									<p class="error-mssg noDisplay" id="nigpSearchTermError"></p>
+									<label for="nigpSearchTerm">Keyword or NIGP Code</label>
+									<input class="med-input" type="text" name="nigpSearchTerm" id="nigpSearchTerm">
+								</div>
+								<div class="button-group inlined">
+									<button class="button primary" id="searchNIGPCodes">Search</button>
+									<button id="nigpBrowse" class="link-match">Browse All Codes</button>
+								</div>
+							</div>
+							<div class="cell">
+								<aside role="complementary"><a href="#modalSelectedNIGPContainer" class="hidden skip">Skip to Selected NIGP Codes List</a></aside>
+							</div>
+							
+							<div class="cell" id="modalNIGPListContainer"></div>
+						</div>
+						
+						<div class="cell col-6-md col-5-lg">
+							<div class="cell" id="skipToSearchBrowse">
+								<aside role="complementary"><a href="#nigpSearchTerm" class="hidden skip">Jump to NIGP Code Search</a></aside>
+							</div>
+							<div class"cell" id="modalSelectedNIGPContainer" tabindex="0">
+								<div class="card">
+									<div class="card-header">
+										<h3>Selected NIGP Codes</h3>
+									</div>
+									
+									<div class="card-body">
+										
+											<p>You will receive notifications for the notices with the following NIGP Codes:</p>
+										
+									
+										<div class="accordion nigp-accordion small-accordion" id="modalSelectedNIGPCodeDisplay">
+											
+												<p id="modalNoNIGPCodes" tabindex="0">No NIGP Codes Selected</p>	
+											
+										</div>
+									</div>
+								</div>
+							</div>	
+						</div>
+					</div>	
+				</div>
+				<div class="cell">
+					<button class="button primary inlined js-modal-close">Close</button>
+				</div>
+			</form>
+		</div>	
+	 
+				</main>
+				
+				<footer role="contentInfo">
+					<div class="main-footer">
+						<div class="grid-container grid-gap-10">
+							<div class="cell col-6-md col-7-lg footer-contact">
+								<h2>Contact Us</h2>
+								<p>
+									For technical help with registering and/or obtaining documents,<br>
+									contact the Bulletin Manager: <a href="mailto:cpowebmaster@uillinois.edu">cpowebmaster@uillinois.edu</a> or (217) 333-3596.
+								</p>
+								<br>
+								<p>
+									For procurement questions,<br>
+									contact the <a href="contactUs.cfm">appropriate university purchasing staff</a>.
+								</p>
+							</div>
+							
+							<nav class="cell col-6-md col-5-lg footer-nav" aria-label="Footer Navigation">
+								<h2>Navigation</h2>
+								<div class="grid-container">
+									<div class="cell">
+										<ul class="footer-navlinks">
+											<li><a href="index.cfm">Home</a></li>
+											<li><a href="search.cfm">Search</a></li>
+											<li><a href="npo.cfm">Potential Upcoming Opportunities</a></li>
+											<li><a href="about.cfm">About the Bulletin</a></li>
+											<li><a href="resources.cfm">Vendor Resources</a></li>
+											<li><a href="ebid.cfm">My E-bids</a></li>
+											<li><a href="news.cfm">News and Announcements</a></li>
+												
+										</ul>
+									</div>
+								</div>
+							</nav>
+						</div>
+					</div>
+					
+						
+		<div id="policy" class="policy-footer">
+			<div class="grid-container grid-gap-10">
+				<div class="cell col-11-md"><p>Copyright &copy; Chief Procurement Officer for Public Institutions of Higher Education</p></div>
+				<div class="cell col-1-md staff-login">
+					<a href="https://staff.procure.stateuniv.state.il.us"><img src="procureCommon/graphics/icons/icon-lock.png" alt="log in to the staff side of the Illinois Higher Ed Bulletin"></a>
+				</div>
+			</div> 
+		</div>
+	
+				
+				</footer>
+				
+										 
+				<script id="pbPublicScript" src="javascript/pb-public.js?v=2025-10"></script>
+				
+			</body>
+		</html>
+
+    

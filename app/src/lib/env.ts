@@ -13,6 +13,10 @@ function optionalEnv(name: string): string | undefined {
   return value || undefined;
 }
 
+export function hasDeepseekApiKey(): boolean {
+  return Boolean(optionalEnv("DEEPSEEK_API_KEY"));
+}
+
 export function hasAnthropicApiKey(): boolean {
   return Boolean(optionalEnv("ANTHROPIC_API_KEY"));
 }
@@ -23,6 +27,18 @@ export function hasGroqApiKey(): boolean {
 
 export function getSamApiKey(): string {
   return requireEnv("SAM_GOV_API_KEY");
+}
+
+export function getDeepseekApiKey(): string {
+  return requireEnv("DEEPSEEK_API_KEY");
+}
+
+export function getDeepseekModel(): string {
+  return optionalEnv("DEEPSEEK_MODEL") ?? "deepseek-chat";
+}
+
+export function getDeepseekBaseUrl(): string {
+  return optionalEnv("DEEPSEEK_BASE_URL") ?? "https://api.deepseek.com/v1";
 }
 
 export function getAnthropicApiKey(): string {

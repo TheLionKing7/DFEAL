@@ -22,6 +22,8 @@ interface DocRow {
   created_at: string;
 }
 
+type ExportFormat = "pdf" | "docx";
+
 const btnPrimary =
   "rounded-lg bg-sidebar px-4 py-2 text-sm font-medium text-white hover:bg-sidebar-surface disabled:opacity-60";
 const btnSecondary =
@@ -48,29 +50,42 @@ export function DocumentGeneratorPanel({
 }) {
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [recLoading, setRecLoading] = useState(true);
+  const [exportFormat, setExportFormat] = useState<ExportFormat>("pdf");
+  const [copyMsg, setCopyMsg] = useState("");
 
   useEffect(() => {
-    setRecLoading(true);
+    let cancelled = false;
     void fetch(`/api/documents/recommend?opportunity_id=${opportunityId}`)
       .then((r) => r.json())
-      .then((data) => setRecommendations(data.recommendations ?? []))
-      .finally(() => setRecLoading(false));
+      .then((data) => { if (!cancelled) setRecommendations(data.recommendations ?? []); })
+      .finally(() => { if (!cancelled) setRecLoading(false); });
+    return () => { cancelled = true; };
   }, [opportunityId, noticeType]);
 
   const primary = recommendations[0];
   const recommended = recommendations.filter((r) => r.recommended);
   const others = recommendations.filter((r) => !r.recommended);
 
+  const downloadUrl = selectedDoc
+    ? `/api/documents/${selectedDoc.id}/download?format=${exportFormat}`
+    : null;
+
+  function handleCopy() {
+    onCopy();
+    setCopyMsg("Copied!");
+    setTimeout(() => setCopyMsg(""), 2000);
+  }
+
   return (
     <div className="grid gap-4 lg:grid-cols-2">
       <Panel title="Smart document generator">
         <p className="mb-3 text-sm text-text-muted">
-          Document types are matched to this opportunity&apos;s notice type and solicitation
-          language. Drafts follow DFEAL templates and company profile conventions.
+          Document types are matched to the notice type and solicitation
+          language of each opportunity. Drafts follow DFEAL templates and company profile conventions.
         </p>
 
         {recLoading && (
-          <p className="text-sm text-text-muted">Analyzing opportunity requirements…</p>
+          <p className="text-sm text-text-muted">Analyzing opportunity requirements&hellip;</p>
         )}
 
         {!recLoading && primary && (
@@ -87,7 +102,7 @@ export function DocumentGeneratorPanel({
               className={cn(btnPrimary, "mt-3")}
             >
               {loading === `doc-${primary.document_type}`
-                ? "Generating…"
+                ? "Generating&hellip;"
                 : `Generate ${primary.label}`}
             </button>
           </div>
@@ -157,15 +172,45 @@ export function DocumentGeneratorPanel({
       <Panel title="Document preview">
         {selectedDoc?.content ? (
           <>
-            <div className="mb-3 flex flex-wrap gap-2">
-              <button type="button" className={btnSecondary} onClick={onCopy}>
-                Copy
+            <div className="mb-3 flex flex-wrap items-center gap-2">
+              <button type="button" className={btnSecondary} onClick={handleCopy}>
+                {copyMsg || "Copy"}
               </button>
+
+              {/* Format toggle */}
+              <div className="flex items-center gap-1 rounded-lg border border-border bg-bg-surface p-0.5 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setExportFormat("pdf")}
+                  className={cn(
+                    "rounded-md px-3 py-1.5 font-medium transition-colors",
+                    exportFormat === "pdf"
+                      ? "bg-sidebar text-white"
+                      : "text-text-muted hover:text-text",
+                  )}
+                >
+                  PDF
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setExportFormat("docx")}
+                  className={cn(
+                    "rounded-md px-3 py-1.5 font-medium transition-colors",
+                    exportFormat === "docx"
+                      ? "bg-sidebar text-white"
+                      : "text-text-muted hover:text-text",
+                  )}
+                >
+                  DOCX
+                </button>
+              </div>
+
               <a
-                href={`/api/documents/${selectedDoc.id}/download?format=pdf`}
-                className={btnPrimary}
+                href={downloadUrl ?? "#"}
+                download
+                className={cn(btnPrimary, "text-xs")}
               >
-                Download PDF
+                Download {exportFormat.toUpperCase()}
               </a>
             </div>
             <pre className="max-h-[520px] overflow-auto whitespace-pre-wrap text-sm leading-relaxed text-text-muted">
@@ -175,7 +220,7 @@ export function DocumentGeneratorPanel({
         ) : (
           <p className="text-sm text-text-muted">
             Select a document type above. The system will recommend the best match for this
-            opportunity&apos;s notice type.
+            opportunity based on notice type and solicitation language.
           </p>
         )}
       </Panel>
@@ -212,7 +257,7 @@ function DocumentTypeCard({
         disabled={loading === `doc-${rec.document_type}`}
         className={cn(btnSecondary, "shrink-0 text-xs")}
       >
-        {loading === `doc-${rec.document_type}` ? "…" : "Generate"}
+        {loading === `doc-${rec.document_type}` ? "&hellip;" : "Generate"}
       </button>
     </div>
   );
