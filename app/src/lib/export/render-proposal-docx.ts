@@ -22,6 +22,7 @@ import {
 } from "docx";
 import { DFEAL_PROFILE } from "@/config/dfeal-profile";
 import { DFEAL_STYLES, type DocumentMeta } from "@/lib/export/dfeal-styles";
+import { parseInlineMarkdown } from "@/lib/export/parse-markdown";
 import type { Buffer } from "buffer";
 
 const S = DFEAL_STYLES;
@@ -29,29 +30,47 @@ const S = DFEAL_STYLES;
 // Color helpers
 const color = (hex: string) => hex.replace("#", "");
 
+/**
+ * Strip inline markdown formatting from a heading string
+ * so heading TextRuns don't contain `**` or `*` artifacts.
+ */
+function cleanHeadingText(raw: string): string {
+  return raw
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
+    .replace(/\*\*\*|___/g, "")
+    .replace(/\*\*|__/g, "")
+    .replace(/\*|_/g, "");
+}
+
+/**
+ * Build an array of TextRun children from a markdown string,
+ * applying bold/italic per segment.
+ */
+function inlineTextRuns(
+  raw: string,
+  baseSize: number,
+  baseColor: string,
+  baseFont = "Times New Roman",
+): TextRun[] {
+  const c = color(baseColor);
+  const segments = parseInlineMarkdown(raw);
+  return segments.map(
+    (seg) =>
+      new TextRun({
+        text: seg.text,
+        bold: seg.bold,
+        italics: seg.italic,
+        size: Math.round(baseSize * 2),
+        font: baseFont,
+        color: c,
+      }),
+  );
+}
+
 function parseMarkdownToDocx(markdown: string): (Paragraph | Table)[] {
   const lines = markdown.split(/\r?\n/);
   const elements: (Paragraph | Table)[] = [];
   let i = 0;
-
-  function pushParagraph(text: string, style?: Partial<Paragraph>) {
-    const t = text.trim();
-    if (!t) return;
-    elements.push(
-      new Paragraph({
-        spacing: { after: 120, line: 360 },
-        ...style,
-        children: [
-          new TextRun({
-            text: t,
-            size: Math.round(S.typography.bodySize * 2),
-            font: "Times New Roman",
-            color: color(S.brand.darkGray),
-          }),
-        ],
-      }),
-    );
-  }
 
   while (i < lines.length) {
     const line = lines[i].trim();
@@ -59,17 +78,25 @@ function parseMarkdownToDocx(markdown: string): (Paragraph | Table)[] {
 
     if (!line) continue;
 
+    // -------------------------------------------------
     // Table detection (pipe-delimited)
+    // -------------------------------------------------
     if (line.startsWith("|") && line.endsWith("|") && line.includes("|")) {
       const tableRows: string[][] = [];
-      tableRows.push(line.split("|").filter((c) => c.trim()).map((c) => c.trim()));
+      tableRows.push(
+        line
+          .split("|")
+          .filter((c) => c.trim())
+          .map((c) => c.trim()),
+      );
 
-      // Collect all rows until no more table lines
       while (i < lines.length) {
         const next = lines[i].trim();
         if (!next.startsWith("|") || !next.endsWith("|")) break;
-        const cells = next.split("|").filter((c) => c.trim()).map((c) => c.trim());
-        // Skip separator rows
+        const cells = next
+          .split("|")
+          .filter((c) => c.trim())
+          .map((c) => c.trim());
         if (cells.length > 0 && !/^[-:]+$/.test(cells[0])) {
           tableRows.push(cells);
         }
@@ -82,7 +109,6 @@ function parseMarkdownToDocx(markdown: string): (Paragraph | Table)[] {
 
         const table = new Table({
           rows: [
-            // Header row
             new TableRow({
               tableHeader: true,
               children: headerRow.map(
@@ -92,7 +118,10 @@ function parseMarkdownToDocx(markdown: string): (Paragraph | Table)[] {
                       type: ShadingType.CLEAR,
                       fill: color(S.brand.navy),
                     },
-                    width: { size: Math.round(5400 / headerRow.length), type: WidthType.DXA },
+                    width: {
+                      size: Math.round(5400 / headerRow.length),
+                      type: WidthType.DXA,
+                    },
                     children: [
                       new Paragraph({
                         spacing: { before: 60, after: 60 },
@@ -110,7 +139,6 @@ function parseMarkdownToDocx(markdown: string): (Paragraph | Table)[] {
                   }),
               ),
             }),
-            // Data rows
             ...dataRows.map(
               (row, ri) =>
                 new TableRow({
@@ -131,14 +159,11 @@ function parseMarkdownToDocx(markdown: string): (Paragraph | Table)[] {
                         children: [
                           new Paragraph({
                             spacing: { before: 40, after: 40 },
-                            children: [
-                              new TextRun({
-                                text: cell,
-                                size: Math.round(9 * 2),
-                                font: "Times New Roman",
-                                color: color(S.brand.darkGray),
-                              }),
-                            ],
+                            children: inlineTextRuns(
+                              cell,
+                              9,
+                              S.brand.darkGray,
+                            ),
                           }),
                         ],
                       }),
@@ -153,18 +178,24 @@ function parseMarkdownToDocx(markdown: string): (Paragraph | Table)[] {
       continue;
     }
 
-    // Headings
+    // -------------------------------------------------
+    // Headings (strip inline markdown from heading text)
+    // -------------------------------------------------
     if (line.startsWith("# ")) {
       elements.push(
         new Paragraph({
           heading: HeadingLevel.HEADING_1,
           spacing: { before: 360, after: 200 },
           border: {
-            bottom: { style: BorderStyle.SINGLE, size: 6, color: color(S.brand.navy) },
+            bottom: {
+              style: BorderStyle.SINGLE,
+              size: 6,
+              color: color(S.brand.navy),
+            },
           },
           children: [
             new TextRun({
-              text: line.slice(2),
+              text: cleanHeadingText(line.slice(2)),
               bold: true,
               size: Math.round(S.typography.headingSizes.h1 * 2),
               font: "Times New Roman",
@@ -183,7 +214,7 @@ function parseMarkdownToDocx(markdown: string): (Paragraph | Table)[] {
           spacing: { before: 280, after: 160 },
           children: [
             new TextRun({
-              text: line.slice(3),
+              text: cleanHeadingText(line.slice(3)),
               bold: true,
               size: Math.round(S.typography.headingSizes.h2 * 2),
               font: "Times New Roman",
@@ -202,7 +233,7 @@ function parseMarkdownToDocx(markdown: string): (Paragraph | Table)[] {
           spacing: { before: 200, after: 120 },
           children: [
             new TextRun({
-              text: line.slice(4),
+              text: cleanHeadingText(line.slice(4)),
               bold: true,
               size: Math.round(S.typography.headingSizes.h3 * 2),
               font: "Times New Roman",
@@ -214,33 +245,63 @@ function parseMarkdownToDocx(markdown: string): (Paragraph | Table)[] {
       continue;
     }
 
-    // Bullets
-    if (/^[-*•]\s+/.test(line)) {
-      const bulletText = line.replace(/^[-*•]\s+/, "");
+    // -------------------------------------------------
+    // Numbered list (e.g. 1. Item)
+    // -------------------------------------------------
+    const numberedMatch = line.match(/^(\d+)[.)]\s+(.+)/);
+    if (numberedMatch) {
+      const numberStr = numberedMatch[1];
+      const body = numberedMatch[2];
       elements.push(
         new Paragraph({
-          bullet: { level: 0 },
           spacing: { before: 60, after: 60, line: 340 },
           children: [
             new TextRun({
-              text: bulletText,
+              text: `${numberStr}.  `,
+              bold: true,
               size: Math.round(S.typography.bodySize * 2),
               font: "Times New Roman",
-              color: color(S.brand.darkGray),
+              color: color(S.brand.navy),
             }),
+            ...inlineTextRuns(body, S.typography.bodySize, S.brand.darkGray),
           ],
         }),
       );
       continue;
     }
 
+    // -------------------------------------------------
+    // Bullets
+    // -------------------------------------------------
+    if (/^[-*•]\s+/.test(line)) {
+      const bulletText = line.replace(/^[-*•]\s+/, "");
+      elements.push(
+        new Paragraph({
+          bullet: { level: 0 },
+          spacing: { before: 60, after: 60, line: 340 },
+          children: inlineTextRuns(
+            bulletText,
+            S.typography.bodySize,
+            S.brand.darkGray,
+          ),
+        }),
+      );
+      continue;
+    }
+
+    // -------------------------------------------------
     // Dividers
+    // -------------------------------------------------
     if (/^_{3,}$/.test(line) || /^---$/.test(line)) {
       elements.push(
         new Paragraph({
           spacing: { before: 120, after: 120 },
           border: {
-            top: { style: BorderStyle.SINGLE, size: 6, color: color(S.brand.lightGray) },
+            top: {
+              style: BorderStyle.SINGLE,
+              size: 6,
+              color: color(S.brand.lightGray),
+            },
           },
           children: [],
         }),
@@ -248,19 +309,18 @@ function parseMarkdownToDocx(markdown: string): (Paragraph | Table)[] {
       continue;
     }
 
-    // Regular paragraph
+    // -------------------------------------------------
+    // Regular paragraph — with inline markdown
+    // -------------------------------------------------
     elements.push(
       new Paragraph({
         spacing: { after: 160, line: 360 },
         alignment: AlignmentType.JUSTIFIED,
-        children: [
-          new TextRun({
-            text: line,
-            size: Math.round(S.typography.bodySize * 2),
-            font: "Times New Roman",
-            color: color(S.brand.darkGray),
-          }),
-        ],
+        children: inlineTextRuns(
+          line,
+          S.typography.bodySize,
+          S.brand.darkGray,
+        ),
       }),
     );
   }
@@ -297,7 +357,11 @@ export async function renderProposalDocx(
       alignment: AlignmentType.CENTER,
       spacing: { after: 200 },
       border: {
-        bottom: { style: BorderStyle.SINGLE, size: 8, color: color(S.brand.gold) },
+        bottom: {
+          style: BorderStyle.SINGLE,
+          size: 8,
+          color: color(S.brand.gold),
+        },
       },
       children: [],
     }),
@@ -438,7 +502,7 @@ export async function renderProposalDocx(
         properties: {
           page: {
             margin: {
-              top: 1440, // 1 inch
+              top: 1440,
               bottom: 1440,
               left: 1440,
               right: 1440,
@@ -451,7 +515,11 @@ export async function renderProposalDocx(
               new Paragraph({
                 alignment: AlignmentType.RIGHT,
                 border: {
-                  bottom: { style: BorderStyle.SINGLE, size: 4, color: color(S.brand.gold) },
+                  bottom: {
+                    style: BorderStyle.SINGLE,
+                    size: 4,
+                    color: color(S.brand.gold),
+                  },
                 },
                 children: [
                   new TextRun({
@@ -471,7 +539,11 @@ export async function renderProposalDocx(
               new Paragraph({
                 alignment: AlignmentType.CENTER,
                 border: {
-                  top: { style: BorderStyle.SINGLE, size: 4, color: color(S.brand.lightGray) },
+                  top: {
+                    style: BorderStyle.SINGLE,
+                    size: 4,
+                    color: color(S.brand.lightGray),
+                  },
                 },
                 children: [
                   new TextRun({

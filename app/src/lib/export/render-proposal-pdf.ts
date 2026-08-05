@@ -2,20 +2,27 @@
  * Professional PDF renderer for DFEAL proposal documents.
  * Produces top-grade branded output with cover pages, section headers,
  * tables, page numbers, and consistent typography.
+ * Now with inline markdown support — no raw `**`, `*`, or `[links]` in output.
  */
 import PDFDocument from "pdfkit";
 import { DFEAL_PROFILE } from "@/config/dfeal-profile";
 import { DFEAL_STYLES, type DocumentMeta } from "@/lib/export/dfeal-styles";
+import { parseInlineMarkdown } from "@/lib/export/parse-markdown";
 
 const S = DFEAL_STYLES;
 
-function parseMarkdownBlocks(markdown: string) {
+// ----------------------------------------------------------------
+// Block-level markdown parser
+// ----------------------------------------------------------------
+interface MarkdownBlock {
+  type: "h1" | "h2" | "h3" | "bullet" | "numbered" | "para" | "divider" | "table" | "table-row";
+  text: string;
+  cells?: string[];
+}
+
+function parseMarkdownBlocks(markdown: string): MarkdownBlock[] {
   const lines = markdown.split(/\r?\n/);
-  const blocks: {
-    type: "h1" | "h2" | "h3" | "bullet" | "para" | "divider" | "table" | "table-row";
-    text: string;
-    cells?: string[];
-  }[] = [];
+  const blocks: MarkdownBlock[] = [];
   let para = "";
 
   function flushPara() {
@@ -53,7 +60,7 @@ function parseMarkdownBlocks(markdown: string) {
         .split("|")
         .filter((c) => c.trim())
         .map((c) => c.trim());
-      // Skip separator rows (|---|)
+      // Skip separator rows
       if (cells.length > 0 && !/^[-:]+$/.test(cells[0])) {
         if (!inTable) {
           inTable = true;
@@ -75,6 +82,9 @@ function parseMarkdownBlocks(markdown: string) {
     } else if (trimmed.startsWith("# ")) {
       flushPara();
       blocks.push({ type: "h1", text: trimmed.slice(2) });
+    } else if (/^\d+[.)]\s+/.test(trimmed)) {
+      flushPara();
+      blocks.push({ type: "numbered", text: trimmed });
     } else if (/^[-*•]\s+/.test(trimmed)) {
       flushPara();
       blocks.push({ type: "bullet", text: trimmed.replace(/^[-*•]\s+/, "") });
@@ -90,6 +100,20 @@ function parseMarkdownBlocks(markdown: string) {
   return blocks;
 }
 
+// ----------------------------------------------------------------
+// Clean heading text (strip inline markdown for headers)
+// ----------------------------------------------------------------
+function cleanHeading(raw: string): string {
+  return raw
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
+    .replace(/\*\*\*|___/g, "")
+    .replace(/\*\*|__/g, "")
+    .replace(/\*|_/g, "");
+}
+
+// ----------------------------------------------------------------
+// Footer helper
+// ----------------------------------------------------------------
 function addFooter(doc: PDFKit.PDFDocument, pageNum: number, totalPages: number) {
   const { mutedGray } = S.brand;
   doc.save();
@@ -109,54 +133,46 @@ function addFooter(doc: PDFKit.PDFDocument, pageNum: number, totalPages: number)
   doc.restore();
 }
 
+// ----------------------------------------------------------------
+// Section header drawing
+// ----------------------------------------------------------------
 function drawSectionHeader(
   doc: PDFKit.PDFDocument,
   text: string,
   level: "h1" | "h2" | "h3",
 ) {
-  const { navy, gold, lightGray } = S.brand;
+  const { navy, gold } = S.brand;
   const fontSize = S.typography.headingSizes[level];
   const left = S.layout.marginLeft;
   const width = S.layout.lineWidth;
+  const clean = cleanHeading(text);
 
   if (level === "h1") {
-    // Major section: navy background band
     doc.save();
     doc.rect(left, doc.y, width, 36).fill(navy);
     doc.fillColor(S.brand.white).fontSize(fontSize).font(S.typography.fontBold);
-    doc.text(text.toUpperCase(), left + 12, doc.y + 9, { width: width - 24 });
+    doc.text(clean.toUpperCase(), left + 12, doc.y + 9, { width: width - 24 });
     doc.restore();
     doc.moveDown(1);
   } else if (level === "h2") {
-    // Sub-section: gold left bar + navy text
     doc.save();
     doc.rect(left, doc.y, 4, 20).fill(gold);
     doc.fillColor(navy).fontSize(fontSize).font(S.typography.fontBold);
-    doc.text(text, left + 14, doc.y, { width: width - 14 });
+    doc.text(clean, left + 14, doc.y, { width: width - 14 });
     doc.restore();
     doc.moveDown(0.6);
   } else {
-    // Sub-sub-section: italic bold
     doc.save();
     doc.fillColor(navy).fontSize(fontSize).font(S.typography.fontBold);
-    doc.text(text, left, doc.y, { width });
+    doc.text(clean, left, doc.y, { width });
     doc.restore();
     doc.moveDown(0.3);
   }
 }
 
-function getTextHeight(doc: PDFKit.PDFDocument, text: string, width: number): number {
-  const opts = { width, align: "justify" as const, lineGap: 3, paragraphGap: 8 };
-  return doc.heightOfString(text, opts);
-}
-
-function checkPageBreak(doc: PDFKit.PDFDocument, neededHeight: number) {
-  const bottom = doc.page.height - S.layout.marginBottom;
-  if (doc.y + neededHeight > bottom) {
-    doc.addPage();
-  }
-}
-
+// ----------------------------------------------------------------
+// Main PDF renderer
+// ----------------------------------------------------------------
 export async function renderProposalPdf(
   content: string,
   meta: DocumentMeta,
@@ -183,14 +199,12 @@ export async function renderProposalPdf(
     doc.on("data", (chunk: Buffer) => chunks.push(chunk));
     doc.on("end", () => {
       const buffer = Buffer.concat(chunks);
-      const ext = "pdf";
-      const name = `${meta.title || "dfeal-proposal"}.${ext}`;
+      const name = `${meta.title || "dfeal-proposal"}.pdf`;
       resolve({ buffer, filename: name });
     });
     doc.on("error", reject);
 
-    const { navy, gold, white, mutedGray, lightGray, offWhite, darkGray, mediumGray } =
-      S.brand;
+    const { navy, gold, white, mutedGray, lightGray, offWhite, darkGray } = S.brand;
 
     // ============================================================
     // COVER PAGE
@@ -200,7 +214,6 @@ export async function renderProposalPdf(
 
     // Top navy band
     doc.rect(0, 0, pageWidth, S.coverPage.bandHeight).fill(navy);
-
     // Gold accent line
     doc.rect(0, S.coverPage.bandHeight, pageWidth, 4).fill(gold);
 
@@ -210,7 +223,6 @@ export async function renderProposalPdf(
     doc.text(DFEAL_PROFILE.legalName, S.layout.marginLeft, 60, {
       width: S.layout.lineWidth,
     });
-
     doc.fillColor(gold).fontSize(12).font(S.typography.font);
     doc.text("Proposal Document", S.layout.marginLeft, 96, {
       width: S.layout.lineWidth,
@@ -272,11 +284,97 @@ export async function renderProposalPdf(
     // ============================================================
     const blocks = parseMarkdownBlocks(content);
     const bottomLimit = doc.page.height - S.layout.marginBottom;
+    const left = S.layout.marginLeft;
+    const lineWidth = S.layout.lineWidth;
+
+    // State for table rendering
+    let tableHeader: string[] | null = null;
+    let tableRows: string[][] = [];
 
     for (const block of blocks) {
-      if (block.type === "table" || block.type === "table-row") continue;
+      // -------------------------------------------------
+      // Table — start / end
+      // -------------------------------------------------
+      if (block.type === "table") {
+        // Beginning of a new table
+        tableHeader = null;
+        tableRows = [];
+        continue;
+      }
 
-      // Calculate needed height
+      if (block.type === "table-row") {
+        const cells = block.cells ?? [];
+        if (!tableHeader) {
+          tableHeader = cells;
+        } else {
+          tableRows.push(cells);
+        }
+        // Don't render until we know the table is complete
+        continue;
+      }
+
+      // If we have a buffered table and now hit a non-table block, flush it
+      if (tableHeader && tableRows.length > 0) {
+        flushTable: {
+          const allRows = [tableHeader, ...tableRows];
+          const colCount = Math.max(...allRows.map((r) => r.length));
+          const colW = (lineWidth - (colCount - 1) * 4) / colCount;
+          const rowHeight = 20;
+          const headerHeight = 24;
+
+          // Page break check
+          const totalHeight = headerHeight + tableRows.length * rowHeight + 20;
+          if (doc.y + totalHeight > bottomLimit) {
+            doc.addPage();
+          }
+
+          const tableStartY = doc.y;
+          let rowY = tableStartY;
+
+          // Header row
+          doc.save();
+          doc.fillColor(navy);
+          doc.rect(left, rowY, lineWidth, headerHeight).fill();
+          doc.fillColor(white).fontSize(9).font(S.typography.fontBold);
+          for (let c = 0; c < colCount; c++) {
+            doc.text(
+              cleanHeading(tableHeader[c] ?? ""),
+              left + c * (colW + 4) + 4,
+              rowY + 4,
+              { width: colW - 8 },
+            );
+          }
+          doc.restore();
+          rowY += headerHeight;
+
+          // Data rows
+          for (let r = 0; r < tableRows.length; r++) {
+            const bg = r % 2 === 1 ? offWhite : white;
+            doc.save();
+            doc.fillColor(bg);
+            doc.rect(left, rowY, lineWidth, rowHeight).fill();
+            doc.fillColor(darkGray).fontSize(9).font(S.typography.font);
+            for (let c = 0; c < colCount; c++) {
+              doc.text(
+                tableRows[r][c] ?? "",
+                left + c * (colW + 4) + 4,
+                rowY + 3,
+                { width: colW - 8 },
+              );
+            }
+            doc.restore();
+            rowY += rowHeight;
+          }
+
+          doc.y = rowY + 10;
+        }
+        tableHeader = null;
+        tableRows = [];
+      }
+
+      // -------------------------------------------------
+      // Calculate needed height for this block
+      // -------------------------------------------------
       let needed = 0;
       switch (block.type) {
         case "h1":
@@ -289,6 +387,7 @@ export async function renderProposalPdf(
           needed = 24;
           break;
         case "bullet":
+        case "numbered":
           needed = 22;
           break;
         case "para": {
@@ -307,50 +406,176 @@ export async function renderProposalPdf(
         doc.addPage();
       }
 
+      // -------------------------------------------------
+      // Render the block
+      // -------------------------------------------------
       switch (block.type) {
         case "h1":
         case "h2":
         case "h3":
           drawSectionHeader(doc, block.text, block.type);
           break;
-        case "bullet":
+
+        case "numbered": {
+          const match = block.text.match(/^(\d+)[.)]\s+(.+)/);
+          if (match) {
+            const num = match[1];
+            const body = match[2];
+            const segments = parseInlineMarkdown(body);
+            doc.save();
+            // Number in navy bold
+            doc.fillColor(navy).fontSize(S.typography.bodySize).font(S.typography.fontBold);
+            doc.text(`${num}.  `, left, doc.y, { continued: true, lineGap: 4 });
+            // Body text with inline formatting
+            for (let s = 0; s < segments.length; s++) {
+              const seg = segments[s];
+              const font =
+                seg.bold && seg.italic
+                  ? S.typography.fontBold
+                  : seg.bold
+                    ? S.typography.fontBold
+                    : seg.italic
+                      ? S.typography.fontOblique
+                      : S.typography.font;
+              doc.fillColor(darkGray).font(font).fontSize(S.typography.bodySize);
+              const opts: Record<string, unknown> = { lineGap: 4 };
+              if (s < segments.length - 1) opts.continued = true;
+              doc.text(seg.text, opts);
+            }
+            doc.restore();
+          }
+          break;
+        }
+
+        case "bullet": {
+          const segments = parseInlineMarkdown(block.text);
           doc.save();
-          doc.fillColor(mediumGray).fontSize(S.typography.bodySize).font(S.typography.font);
-          const bulletColor = gold;
-          doc.fillColor(bulletColor);
-          doc.circle(S.layout.marginLeft + 4, doc.y + 6, 2.5).fill();
-          doc.fillColor(mediumGray);
-          doc.text(`  ${block.text}`, S.layout.marginLeft + 14, doc.y, {
-            width: S.layout.lineWidth - 14,
-            lineGap: 4,
-          });
+          // Gold bullet dot
+          doc.fillColor(gold);
+          doc.circle(left + 4, doc.y + 6, 2.5).fill();
+          doc.fillColor(darkGray);
+          // Render inline segments
+          for (let s = 0; s < segments.length; s++) {
+            const seg = segments[s];
+            const font =
+              seg.bold && seg.italic
+                ? S.typography.fontBold
+                : seg.bold
+                  ? S.typography.fontBold
+                  : seg.italic
+                    ? S.typography.fontOblique
+                    : S.typography.font;
+            doc.font(font).fontSize(S.typography.bodySize);
+            const isLast = s === segments.length - 1;
+            if (s === 0) {
+              doc.text(`  ${seg.text}`, left + 14, doc.y, {
+                width: lineWidth - 14,
+                lineGap: 4,
+                continued: !isLast,
+              });
+            } else {
+              doc.text(seg.text, {
+                continued: !isLast,
+                lineGap: 4,
+              });
+            }
+          }
           doc.restore();
           break;
-        case "para":
+        }
+
+        case "para": {
+          const segments = parseInlineMarkdown(block.text);
           doc.save();
-          doc
-            .fillColor(darkGray)
-            .fontSize(S.typography.bodySize)
-            .font(S.typography.font);
-          doc.text(block.text, S.layout.marginLeft, doc.y, {
-            width: S.layout.lineWidth,
-            align: "justify",
-            lineGap: 3,
-            paragraphGap: 8,
-          });
+          // Render inline-formatted paragraph
+          for (let s = 0; s < segments.length; s++) {
+            const seg = segments[s];
+            const font =
+              seg.bold && seg.italic
+                ? S.typography.fontBold
+                : seg.bold
+                  ? S.typography.fontBold
+                  : seg.italic
+                    ? S.typography.fontOblique
+                    : S.typography.font;
+            doc.fillColor(darkGray).font(font).fontSize(S.typography.bodySize);
+            const isLast = s === segments.length - 1;
+            if (s === 0) {
+              doc.text(seg.text, left, doc.y, {
+                width: lineWidth,
+                align: "justify",
+                lineGap: 3,
+                paragraphGap: isLast ? 8 : 0,
+                continued: !isLast,
+              });
+            } else {
+              doc.text(seg.text, {
+                continued: !isLast,
+                lineGap: 3,
+              });
+            }
+          }
           doc.restore();
           break;
+        }
+
         case "divider":
           doc.save();
           doc.strokeColor(lightGray).lineWidth(1);
           doc
-            .moveTo(S.layout.marginLeft, doc.y + 4)
-            .lineTo(S.layout.marginLeft + S.layout.lineWidth, doc.y + 4)
+            .moveTo(left, doc.y + 4)
+            .lineTo(left + lineWidth, doc.y + 4)
             .stroke();
           doc.moveDown(1);
           doc.restore();
           break;
       }
+    }
+
+    // Flush any remaining table at end of document
+    if (tableHeader && tableRows.length > 0) {
+      const allRows = [tableHeader, ...tableRows];
+      const colCount = Math.max(...allRows.map((r) => r.length));
+      const colW = (lineWidth - (colCount - 1) * 4) / colCount;
+      const rowHeight = 20;
+      const headerHeight = 24;
+
+      if (doc.y + headerHeight + tableRows.length * rowHeight > bottomLimit) {
+        doc.addPage();
+      }
+
+      const tableStartY = doc.y;
+      let rowY = tableStartY;
+
+      doc.save();
+      doc.fillColor(navy);
+      doc.rect(left, rowY, lineWidth, headerHeight).fill();
+      doc.fillColor(white).fontSize(9).font(S.typography.fontBold);
+      for (let c = 0; c < colCount; c++) {
+        doc.text(
+          cleanHeading(tableHeader[c] ?? ""),
+          left + c * (colW + 4) + 4,
+          rowY + 4,
+          { width: colW - 8 },
+        );
+      }
+      doc.restore();
+      rowY += headerHeight;
+
+      for (let r = 0; r < tableRows.length; r++) {
+        const bg = r % 2 === 1 ? offWhite : white;
+        doc.save();
+        doc.fillColor(bg);
+        doc.rect(left, rowY, lineWidth, rowHeight).fill();
+        doc.fillColor(darkGray).fontSize(9).font(S.typography.font);
+        for (let c = 0; c < colCount; c++) {
+          doc.text(tableRows[r][c] ?? "", left + c * (colW + 4) + 4, rowY + 3, { width: colW - 8 });
+        }
+        doc.restore();
+        rowY += rowHeight;
+      }
+
+      doc.y = rowY + 10;
     }
 
     // ============================================================
@@ -359,7 +584,7 @@ export async function renderProposalPdf(
     const pages = doc.bufferedPageRange();
     for (let i = 0; i < pages.count; i++) {
       doc.switchToPage(i);
-      if (i === 0) continue; // No footer on cover
+      if (i === 0) continue;
       addFooter(doc, i + 1, pages.count);
     }
 
