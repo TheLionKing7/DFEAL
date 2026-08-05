@@ -1,6 +1,6 @@
 /**
  * LLM provider orchestrator.
- * Priority order: DeepSeek (primary) → Claude (fallback) → Groq (last resort).
+ * Priority order: DeepSeek (primary) → Groq (fallback) → Claude (last resort).
  */
 import { deepseekComplete } from "@/lib/ai/deepseek";
 import { claudeComplete } from "@/lib/ai/claude";
@@ -34,21 +34,7 @@ export async function llmComplete(options: {
     errors.push("DeepSeek: DEEPSEEK_API_KEY not configured");
   }
 
-  // 2. Claude — first fallback
-  if (hasAnthropicApiKey()) {
-    try {
-      const text = await claudeComplete(options);
-      return { text, provider: "anthropic" };
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Claude request failed";
-      errors.push(`Claude: ${message}`);
-    }
-  } else {
-    errors.push("Claude: ANTHROPIC_API_KEY not configured");
-  }
-
-  // 3. Groq — last resort fallback
+  // 2. Groq — first fallback
   if (hasGroqApiKey()) {
     try {
       const text = await groqComplete(options);
@@ -60,6 +46,20 @@ export async function llmComplete(options: {
     }
   } else {
     errors.push("Groq: GROQ_API_KEY not configured");
+  }
+
+  // 3. Claude — last resort fallback
+  if (hasAnthropicApiKey()) {
+    try {
+      const text = await claudeComplete(options);
+      return { text, provider: "anthropic" };
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Claude request failed";
+      errors.push(`Claude: ${message}`);
+    }
+  } else {
+    errors.push("Claude: ANTHROPIC_API_KEY not configured");
   }
 
   throw new Error(`All LLM providers failed.\n${errors.join("\n")}`);
