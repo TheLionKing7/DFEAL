@@ -1,4 +1,5 @@
 import { getSupabaseAdmin } from "@/lib/db/supabase-admin";
+import { combineOrFilters, freshnessOrFilter } from "@/lib/db/freshness";
 import {
   dbRowToOpportunity,
   hotRowToDisplay,
@@ -43,6 +44,7 @@ export async function listOpportunities(options: {
   marketTier?: string;
 }): Promise<Opportunity[]> {
   const supabase = getSupabaseAdmin();
+  const fresh = freshnessOrFilter();
   let query = supabase
     .from("opportunities")
     .select("*")
@@ -58,9 +60,14 @@ export async function listOpportunities(options: {
   else if (options.source) query = query.eq("source", options.source);
   if (options.naics) query = query.eq("naics", options.naics);
   if (options.marketTier) query = query.eq("market_tier", options.marketTier);
-  if (options.q?.trim()) {
-    const term = options.q.trim().replace(/[%_]/g, "");
-    query = query.or(`title.ilike.%${term}%,agency_name.ilike.%${term}%`);
+
+  // Only surface fresh opportunities (future due dates / within grace window).
+  const term = options.q?.trim().replace(/[%_]/g, "");
+  if (term) {
+    const search = `title.ilike.%${term}%,agency_name.ilike.%${term}%`;
+    query = query.or(combineOrFilters(search, fresh));
+  } else {
+    query = query.or(fresh);
   }
 
   const { data, error } = await query;
@@ -74,6 +81,7 @@ export async function listAgencySummaries(limit = 50) {
     .from("opportunities")
     .select("agency_id, agency_name")
     .eq("status", "active")
+    .or(freshnessOrFilter())
     .not("agency_name", "is", null);
 
   if (error) throw new Error(error.message);
@@ -97,6 +105,7 @@ export async function listHotOpportunities(limit = 12) {
   const { data, error } = await supabase
     .from("hot_opportunities")
     .select("*")
+    .or(freshnessOrFilter())
     .order("fit_score", { ascending: false })
     .limit(limit);
 
@@ -112,6 +121,7 @@ export async function listActiveOpportunityIds(limit = 200): Promise<string[]> {
     .from("opportunities")
     .select("id")
     .eq("status", "active")
+    .or(freshnessOrFilter())
     .order("posted_date", { ascending: false, nullsFirst: false })
     .limit(limit);
 
@@ -126,6 +136,7 @@ export async function listUnscoredOpportunityIds(limit = 100): Promise<string[]>
     .from("opportunities")
     .select("id")
     .eq("status", "active")
+    .or(freshnessOrFilter())
     .order("posted_date", { ascending: false, nullsFirst: false })
     .limit(limit * 2);
 

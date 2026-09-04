@@ -9,9 +9,9 @@ export interface ArchiveResult {
  * Archive all stale/expired opportunities by invoking the
  * `archive_stale_opportunities()` PostgreSQL function.
  *
- * Policy: opportunities have a 3-day lifecycle. Anything that has
- * expired for 4+ days (deadline passed, or no deadline and 4+ days old)
- * is archived so only current opportunities surface for clients.
+ * Policy: opportunities have a 7-day freshness window. Anything whose
+ * deadline has expired for more than 7 days (or is undated and 7+ days
+ * old) is archived so only fresh opportunities surface for clients.
  *
  * Called automatically by the daily pipeline.
  */

@@ -1,6 +1,7 @@
 import {
   dbRowToOpportunity,
 } from "@/lib/db/map-opportunity";
+import { freshnessOrFilter } from "@/lib/db/freshness";
 import { getSupabaseAdmin } from "@/lib/db/supabase-admin";
 import { classifyOpportunity } from "@/lib/opportunity/classify";
 import { dedupeHotOpportunityRows, dedupeOpportunityCards } from "@/lib/opportunity/dedupe";
@@ -49,6 +50,7 @@ export async function loadExplorePageData() {
   const { data: hotRows, error: hotError } = await supabase
     .from("hot_opportunities")
     .select("*")
+    .or(freshnessOrFilter())
     .order("fit_score", { ascending: false })
     .limit(40);
 
@@ -73,6 +75,7 @@ export async function loadExplorePageData() {
     .from("opportunities")
     .select("*")
     .eq("status", "active")
+    .or(freshnessOrFilter())
     .order("posted_date", { ascending: false, nullsFirst: false })
     .limit(120);
 
@@ -99,6 +102,7 @@ export async function loadExplorePageData() {
         .select("*")
         .eq("status", "active")
         .eq("source", "sam")
+        .or(freshnessOrFilter())
         .order("posted_date", { ascending: false, nullsFirst: false })
         .order("updated_at", { ascending: false })
         .limit(40),
@@ -115,6 +119,7 @@ export async function loadExplorePageData() {
           "education_il",
           "demandstar",
         ])
+        .or(freshnessOrFilter())
         .order("posted_date", { ascending: false, nullsFirst: false })
         .order("updated_at", { ascending: false })
         .limit(40),
@@ -123,6 +128,7 @@ export async function loadExplorePageData() {
         .select("*")
         .eq("status", "active")
         .in("source", ["grants_gov", "sba"])
+        .or(freshnessOrFilter())
         .order("posted_date", { ascending: false, nullsFirst: false })
         .order("updated_at", { ascending: false })
         .limit(40),
