@@ -8,6 +8,7 @@ import PDFDocument from "pdfkit";
 import { DFEAL_PROFILE } from "@/config/dfeal-profile";
 import { DFEAL_STYLES, type DocumentMeta } from "@/lib/export/dfeal-styles";
 import { parseInlineMarkdown } from "@/lib/export/parse-markdown";
+import { sanitizeMarkdownOutput } from "@/lib/export/markdown";
 
 const S = DFEAL_STYLES;
 
@@ -282,7 +283,7 @@ export async function renderProposalPdf(
     // ============================================================
     // DOCUMENT CONTENT
     // ============================================================
-    const blocks = parseMarkdownBlocks(content);
+    const blocks = parseMarkdownBlocks(sanitizeMarkdownOutput(content));
     const bottomLimit = doc.page.height - S.layout.marginBottom;
     const left = S.layout.marginLeft;
     const lineWidth = S.layout.lineWidth;

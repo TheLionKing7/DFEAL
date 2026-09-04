@@ -1,3 +1,4 @@
+import { archiveStaleOpportunities } from "@/lib/db/archive";
 import {
   createDigestRun,
   finishDigestRun,
@@ -15,6 +16,7 @@ import { isHotScore, scoreOpportunity } from "@/lib/scoring/score-opportunity";
 export interface DailyPipelineResult {
   digest_id: string;
   ingest: { fetched: number; upserted: number };
+  archived: number;
   sled_ingest?: {
     total_fetched: number;
     total_upserted: number;
@@ -47,6 +49,9 @@ export async function runDailyPipeline(): Promise<DailyPipelineResult> {
     } catch {
       grantsIngest = { sources: {}, total_fetched: 0, total_upserted: 0 };
     }
+    // Archive stale/expired opportunities so only current ones surface
+    const { archivedCount } = await archiveStaleOpportunities();
+
     const activeIds = await listActiveOpportunityIds(200);
     const scores = [];
     let hotCount = 0;
@@ -94,6 +99,7 @@ export async function runDailyPipeline(): Promise<DailyPipelineResult> {
     return {
       digest_id: digestId,
       ingest,
+      archived: archivedCount,
       sled_ingest: sledIngest
         ? {
             total_fetched: sledIngest.total_fetched,

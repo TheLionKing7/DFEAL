@@ -1,21 +1,15 @@
 # Contract Proposal — {{LEGAL_NAME}}
 
-> Full proposal response for RFP / RFQ / IFB solicitations (Volumes I–III style structure).
-
 ## Proposal cover
 
-| Field | Value |
-|-------|-------|
-| Solicitation | {{NOTICE_ID}} |
-| Title | {{OPPORTUNITY_TITLE}} |
-| Agency | {{AGENCY_NAME}} |
-| Offeror | {{LEGAL_NAME}} |
-| UEI / CAGE | {{UEI}} / {{CAGE}} |
-| NAICS | {{NAICS}} |
-| Set-aside | {{SET_ASIDE}} |
-| Due date | {{RESPONSE_DEADLINE}} |
-
----
+- Solicitation: {{NOTICE_ID}}
+- Title: {{OPPORTUNITY_TITLE}}
+- Agency: {{AGENCY_NAME}}
+- Offeror: {{LEGAL_NAME}}
+- UEI / CAGE: {{UEI}} / {{CAGE}}
+- NAICS: {{NAICS}}
+- Set-aside: {{SET_ASIDE}}
+- Due date: {{RESPONSE_DEADLINE}}
 
 ## Volume I — Administrative / cover letter
 
@@ -47,11 +41,11 @@
 - Subcontractor management (if applicable)
 - Compliance: FAR, HIPAA, security controls as required
 
-## Price / cost (narrative placeholder)
+## Price / cost
 
 - Basis of estimate overview (if narrative required; detailed pricing separate)
 
-## Appendices index
+## Appendices
 
 - Certifications
 - Organizational chart

@@ -1,19 +1,5 @@
 # RFI Response — {{LEGAL_NAME}}
 
-> Response to Request for Information. Answer each RFI question clearly; cite DFEAL experience and differentiators.
-
-## Header
-
-| Field | Value |
-|-------|-------|
-| Solicitation / RFI | {{NOTICE_ID}} — {{OPPORTUNITY_TITLE}} |
-| Agency | {{AGENCY_NAME}} |
-| Respondent | {{LEGAL_NAME}} (UEI {{UEI}}, CAGE {{CAGE}}) |
-| NAICS | {{PRIMARY_NAICS}} |
-| Contact | {{CONTACT_EMAIL}} · {{PHONE}} |
-
----
-
 ## 1. Transmittal letter
 
 - Formal submission letter to contracting officer
@@ -22,6 +8,11 @@
 
 ## 2. Company qualifications summary
 
+- Solicitation / RFI: {{NOTICE_ID}} — {{OPPORTUNITY_TITLE}}
+- Agency: {{AGENCY_NAME}}
+- Respondent: {{LEGAL_NAME}} (UEI {{UEI}}, CAGE {{CAGE}})
+- NAICS: {{PRIMARY_NAICS}}
+- Contact: {{CONTACT_EMAIL}} · {{PHONE}}
 - Executive summary of DFEAL fit for stated need
 - Core competencies directly mapped to RFI scope
 - Certifications and socioeconomic status

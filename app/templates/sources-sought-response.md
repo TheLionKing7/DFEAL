@@ -1,28 +1,19 @@
 # Sources Sought Response — {{LEGAL_NAME}}
 
-> Market research response demonstrating DFEAL capability to perform the described work.
-
-## Header
-
-| Field | Value |
-|-------|-------|
-| Notice | {{NOTICE_ID}} — {{OPPORTUNITY_TITLE}} |
-| Agency | {{AGENCY_NAME}} |
-| Company | {{LEGAL_NAME}} · UEI {{UEI}} · CAGE {{CAGE}} |
-| NAICS | {{PRIMARY_NAICS}} (+ secondary as applicable) |
-| Set-aside | {{SET_ASIDE}} |
-| Response deadline | {{RESPONSE_DEADLINE}} |
-
----
-
 ## 1. Company identification
 
 - Legal name, UEI, CAGE, SAM active status
 - Small business and certification summary
 - Primary and secondary NAICS codes
 
-## 2. Capability statement (concise)
+## 2. Capability statement
 
+- Notice: {{NOTICE_ID}} — {{OPPORTUNITY_TITLE}}
+- Agency: {{AGENCY_NAME}}
+- Company: {{LEGAL_NAME}} · UEI {{UEI}} · CAGE {{CAGE}}
+- NAICS: {{PRIMARY_NAICS}} (+ secondary as applicable)
+- Set-aside: {{SET_ASIDE}}
+- Response deadline: {{RESPONSE_DEADLINE}}
 - Summary of relevant experience for this sources sought
 - Core competencies aligned to scope
 - Differentiators and win themes

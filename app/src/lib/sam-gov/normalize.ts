@@ -38,6 +38,7 @@ export function normalizeSamOpportunity(
     response_deadline: raw.responseDeadLine ?? null,
     posted_date: raw.postedDate ?? null,
     status: "active",
+    archived_at: null,
     sam_url: raw.uiLink ?? null,
     source_url: raw.uiLink ?? null,
     raw_data: raw as Record<string, unknown>,

@@ -1,21 +1,5 @@
 # Capability Statement — {{LEGAL_NAME}}
 
-> DFEAL standard capability package for agency registration, pre-solicitation outreach, and qualifications submissions.
-
-## Document control
-
-| Field | Value |
-|-------|-------|
-| Legal name | {{LEGAL_NAME}} |
-| UEI | {{UEI}} |
-| CAGE | {{CAGE}} |
-| SAM status | {{SAM_STATUS}} |
-| Primary NAICS | {{PRIMARY_NAICS}} |
-| Contact | {{CONTACT_EMAIL}} · {{PHONE}} |
-| Website | {{WEBSITE}} |
-
----
-
 ## 1. Cover letter
 
 - Date and contracting officer / agency addressee (from solicitation when available)
@@ -33,6 +17,10 @@
 
 ## 3. Company overview
 
+- Legal name: {{LEGAL_NAME}}
+- UEI: {{UEI}} · CAGE: {{CAGE}} · SAM status: {{SAM_STATUS}}
+- Primary NAICS: {{PRIMARY_NAICS}}
+- Contact: {{CONTACT_EMAIL}} · {{PHONE}} · {{WEBSITE}}
 - Capability narrative (from DFEAL profile — healthcare, PMO, research, procurement)
 - Core competencies (bulleted)
 - Certifications and designations

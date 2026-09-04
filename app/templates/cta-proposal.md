@@ -1,18 +1,5 @@
 # CTA / Teaming Proposal — {{LEGAL_NAME}}
 
-> Call-to-action or teaming response for partner, subcontract, or JV opportunities.
-
-## Header
-
-| Field | Value |
-|-------|-------|
-| Opportunity | {{OPPORTUNITY_TITLE}} |
-| Agency / Prime | {{AGENCY_NAME}} |
-| DFEAL | {{LEGAL_NAME}} · UEI {{UEI}} · CAGE {{CAGE}} |
-| NAICS | {{PRIMARY_NAICS}} |
-
----
-
 ## 1. Letter of interest
 
 - Expression of interest in teaming / subcontract role
@@ -21,6 +8,10 @@
 
 ## 2. Company snapshot
 
+- Opportunity: {{OPPORTUNITY_TITLE}}
+- Agency / Prime: {{AGENCY_NAME}}
+- DFEAL: {{LEGAL_NAME}} · UEI {{UEI}} · CAGE {{CAGE}}
+- NAICS: {{PRIMARY_NAICS}}
 - Capability summary and certifications
 - Relevant NAICS and PSC codes
 - Small business / socioeconomic credentials

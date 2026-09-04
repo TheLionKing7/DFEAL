@@ -8,6 +8,7 @@ import { OpportunityContractStrip } from "@/components/opportunity/OpportunityCo
 import { WorkspaceTabs, type WorkspaceTab } from "@/components/opportunity/WorkspaceTabs";
 import { enrichOpportunityDetails } from "@/lib/opportunity/enrich";
 import { classifyOpportunity } from "@/lib/opportunity/classify";
+import { markdownToPlainText } from "@/lib/export/markdown";
 import { PURSUIT_STAGES, type PursuitStage } from "@/shared/opportunity-lanes";
 import { type DocumentType } from "@/shared/document-types";
 import { cn } from "@/shared/cn";
@@ -542,7 +543,8 @@ export function OpportunityWorkspace({
           onGenerate={(type) => void generateDocument(type)}
           onLoadDocument={(id) => void loadDocument(id)}
           onCopy={() => {
-            if (selectedDoc?.content) void navigator.clipboard.writeText(selectedDoc.content);
+            if (selectedDoc?.content)
+              void navigator.clipboard.writeText(markdownToPlainText(selectedDoc.content));
           }}
         />
       )}

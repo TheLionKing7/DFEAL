@@ -81,6 +81,7 @@ function normalizeDemandStarBid(row: DemandStarBidRow): Opportunity {
     posted_date: posted,
     updated_at: now,
     status: "active",
+    archived_at: null,
     sam_url: null,
     source_url: demandStarBidUrl(bidId),
     raw_data: { ...row, market_tier: marketTier } as Record<string, unknown>,

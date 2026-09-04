@@ -53,6 +53,7 @@ export function baseGrantOpportunity(
     posted_date: partial.posted_date,
     updated_at: now,
     status: "active",
+    archived_at: null,
     sam_url: null,
     source_url: partial.source_url,
     raw_data: partial.raw_data,

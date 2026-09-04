@@ -2,6 +2,7 @@ import { buildDfealSystemPrompt, DFEAL_PROFILE } from "@/config/dfeal-profile";
 import { llmComplete } from "@/lib/ai/complete";
 import { saveDocument } from "@/lib/db/documents";
 import { getFilledTemplate } from "@/lib/documents/template-loader";
+import { sanitizeMarkdownOutput } from "@/lib/export/markdown";
 import { getDocumentTypeLabel, type DocumentType } from "@/shared/document-types";
 import type { Opportunity } from "@/shared/types/opportunity";
 
@@ -18,19 +19,21 @@ const DRAFTING_RULES = [
   "Follow the TEMPLATE STRUCTURE exactly: use the same section headings and order.",
   "Populate EVERY section with REAL DFEAL company data from the profile — never use placeholders, brackets, or [Insert ...] text.",
   "Tailor win themes, technical approach, and past performance to this specific opportunity and agency mission.",
+  "Mirror the tone, depth, and structure of DFEAL's real client-facing documents (capability statements, RFI responses, sources-sought responses, and proposals).",
   "",
-  "FORMATTING RULES (critical for PDF/DOCX output):",
-  "- Use `# Document Title` for the main title on page 1",
-  "- Use `## Major Section` for primary section headings (e.g. ## 1. Executive Summary)",
-  "- Use `### Subsection` for sub-headings within sections",
-  "- Use pipe tables for structured data like contact info, NAICS codes, past performance summaries:",
-  "  | Field | Value |",
-  "  |-------|-------|",
-  "  | Name | DFEAL LLC |",
-  "- Use bullet lists with `-` for non-ordered items",
-  "- Use `---` as horizontal dividers between major sections",
-  "- Write in full paragraphs with professional justification-friendly prose",
-  "- Include UEI, CAGE, NAICS, certifications, and contact block where the template specifies",
+  "OUTPUT FORMAT — write clean, submission-ready prose. Only these structures are allowed:",
+  "- Use `# Document Title` once, as the very first line",
+  "- Use `## Section Heading` for major sections (e.g. ## Executive Summary)",
+  "- Use `### Subsection` for sub-headings within a section",
+  "- Use `-` bullets for short non-ordered lists",
+  "- Use `1.` numbered lists only for ordered steps or explicit lists",
+  "- Write full, professional paragraphs everywhere else",
+  "",
+  "DO NOT use any other markdown syntax:",
+  "- No **bold**, *italic*, or `code` (write plain words)",
+  "- No > blockquotes, no ``` code fences, no --- or *** dividers",
+  "- No pipe tables (write 'Field: value' on its own line instead)",
+  "- No meta commentary, no 'Here is the document', no JSON",
   "",
   "SUBSTANCE RULES:",
   "- For Capability Statement: deliver one cohesive document covering cover letter through management plan with agency-specific win themes",
@@ -40,8 +43,7 @@ const DRAFTING_RULES = [
   "- For CTA Proposal: clearly define DFEAL's proposed role and contribution to the team",
   "- Reference specific DFEAL past performance contracts by name and agency",
   "- Show deep understanding of the agency's mission and procurement objectives",
-  "",
-  "Output markdown only — no JSON, no code fences, no meta commentary, no 'Here is the document' preamble.",
+  "- Include UEI, CAGE, NAICS, certifications, and contact block where the template specifies",
 ].join("\n");
 
 export async function generateProposalDocument(input: {
@@ -107,13 +109,17 @@ export async function generateProposalDocument(input: {
     maxTokens: MAX_TOKENS[documentType],
   });
 
+  // Strip any residual markdown jargon (code fences, blockquotes, dividers)
+  // so the stored document reads as clean, professional prose.
+  const content = sanitizeMarkdownOutput(text).trim();
+
   const title = `${label} — ${opp.title.slice(0, 80)}`;
 
   const doc = await saveDocument({
     opportunity_id: opp.id,
     document_type: documentType,
     title,
-    content_text: text.trim(),
+    content_text: content,
     provider,
     created_by: userEmail,
   });

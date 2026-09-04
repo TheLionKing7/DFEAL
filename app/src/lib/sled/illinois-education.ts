@@ -59,6 +59,7 @@ function cpsReferenceOpportunity(): Opportunity {
     posted_date: now,
     updated_at: now,
     status: "active",
+    archived_at: null,
     sam_url: null,
     source_url: "https://www.cps.edu/procurement/contracting-opportunities",
     raw_data: {

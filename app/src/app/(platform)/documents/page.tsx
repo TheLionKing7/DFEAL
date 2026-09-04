@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { PageHeader, PageShell, Panel } from "@/components/layout/PageShell";
+import { markdownToPlainText } from "@/lib/export/markdown";
 import { getDocumentTypeLabel } from "@/shared/document-types";
 
 interface DocRow {
@@ -86,7 +87,9 @@ export default function DocumentsPage() {
                 <button
                   type="button"
                   className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium hover:border-gold/40"
-                  onClick={() => navigator.clipboard.writeText(selected.content_text ?? "")}
+                  onClick={() =>
+                    navigator.clipboard.writeText(markdownToPlainText(selected.content_text ?? ""))
+                  }
                 >
                   Copy
                 </button>
@@ -98,7 +101,7 @@ export default function DocumentsPage() {
                 </a>
               </div>
               <pre className="max-h-[520px] overflow-auto whitespace-pre-wrap text-xs leading-relaxed text-text-muted">
-                {selected.content_text}
+                {markdownToPlainText(selected.content_text ?? "")}
               </pre>
             </>
           ) : (

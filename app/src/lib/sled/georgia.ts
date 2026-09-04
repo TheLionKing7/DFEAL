@@ -82,6 +82,7 @@ function normalizeGeorgiaRow(row: GeorgiaEventRow): Opportunity {
     posted_date: parseGeorgiaDateString(row.postingDateStr),
     updated_at: now,
     status: "active",
+    archived_at: null,
     sam_url: null,
     source_url: detailUrl,
     raw_data: row as unknown as Record<string, unknown>,

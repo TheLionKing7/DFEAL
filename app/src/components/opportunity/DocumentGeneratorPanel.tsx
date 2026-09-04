@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Panel } from "@/components/layout/PageShell";
+import { markdownToPlainText } from "@/lib/export/markdown";
 import type { DocumentType } from "@/shared/document-types";
 import { getDocumentTypeLabel } from "@/shared/document-types";
 import { cn } from "@/shared/cn";
@@ -214,7 +215,7 @@ export function DocumentGeneratorPanel({
               </a>
             </div>
             <pre className="max-h-[520px] overflow-auto whitespace-pre-wrap text-sm leading-relaxed text-text-muted">
-              {selectedDoc.content}
+              {markdownToPlainText(selectedDoc.content)}
             </pre>
           </>
         ) : (

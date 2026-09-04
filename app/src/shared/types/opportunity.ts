@@ -12,7 +12,7 @@ export type OpportunitySource =
 
 export type MarketTier = "federal" | "state" | "local" | "education";
 
-export type OpportunityStatus = "active" | "closed" | "awarded" | "cancelled";
+export type OpportunityStatus = "active" | "closed" | "awarded" | "cancelled" | "archived";
 
 export type NoticeType =
   | "presolicitation"
@@ -44,6 +44,7 @@ export interface Opportunity {
   posted_date: string | null;
   updated_at: string;
   status: OpportunityStatus;
+  archived_at: string | null;
   sam_url: string | null;
   source_url: string | null;
   raw_data: Record<string, unknown> | null;

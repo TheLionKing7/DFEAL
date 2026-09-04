@@ -101,6 +101,7 @@ export function dbRowToOpportunity(row: DbOpportunity | HotOpportunity): Opportu
     posted_date: row.posted_date,
     updated_at: row.updated_at,
     status: row.status as Opportunity["status"],
+    archived_at: (row as Record<string, unknown>).archived_at as string | null ?? null,
     sam_url: row.sam_url,
     source_url: row.source_url,
     raw_data: row.raw_json as Record<string, unknown>,

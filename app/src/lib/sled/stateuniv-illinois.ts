@@ -130,6 +130,7 @@ function normalizeNotice(row: NoticeRow): Opportunity {
     posted_date: null,
     updated_at: now,
     status: "active",
+    archived_at: null,
     sam_url: null,
     source_url: detailUrl,
     raw_data: {

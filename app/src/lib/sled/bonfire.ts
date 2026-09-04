@@ -79,6 +79,7 @@ function normalizeBonfireProject(
     posted_date: null,
     updated_at: now,
     status: "active",
+    archived_at: null,
     sam_url: null,
     source_url: `${base}/opportunities/${project.ProjectID}`,
     raw_data: {

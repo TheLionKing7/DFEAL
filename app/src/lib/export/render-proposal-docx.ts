@@ -23,6 +23,7 @@ import {
 import { DFEAL_PROFILE } from "@/config/dfeal-profile";
 import { DFEAL_STYLES, type DocumentMeta } from "@/lib/export/dfeal-styles";
 import { parseInlineMarkdown } from "@/lib/export/parse-markdown";
+import { sanitizeMarkdownOutput } from "@/lib/export/markdown";
 import type { Buffer } from "buffer";
 
 const S = DFEAL_STYLES;
@@ -332,7 +333,7 @@ export async function renderProposalDocx(
   content: string,
   meta: DocumentMeta,
 ): Promise<{ buffer: Buffer; filename: string }> {
-  const bodyElements = parseMarkdownToDocx(content);
+  const bodyElements = parseMarkdownToDocx(sanitizeMarkdownOutput(content));
 
   // Cover page content
   const coverPageElements: (Paragraph | Table)[] = [

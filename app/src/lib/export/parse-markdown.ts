@@ -21,8 +21,10 @@ export function parseInlineMarkdown(raw: string): MarkdownSegment[] {
 
   const segments: MarkdownSegment[] = [];
 
-  // Step 1 — strip markdown links, keep the link text
-  const text = raw.replace(/\[([^\]]*)\]\([^)]*\)/g, "$1");
+  // Step 1 — strip markdown links and inline code, keep the text
+  const text = raw
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
+    .replace(/`([^`]*)`/g, "$1");
 
   // Step 2 — tokenize bold + italic spans
   // Order matters: bold first so we don't split `*` inside `**`
