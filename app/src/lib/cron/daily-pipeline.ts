@@ -16,6 +16,7 @@ import { isHotScore, scoreOpportunity } from "@/lib/scoring/score-opportunity";
 export interface DailyPipelineResult {
   digest_id: string;
   ingest: { fetched: number; upserted: number };
+  sam_error?: string;
   archived: number;
   sled_ingest?: {
     total_fetched: number;
@@ -36,7 +37,21 @@ export async function runDailyPipeline(): Promise<DailyPipelineResult> {
   const digestId = await createDigestRun();
 
   try {
-    const ingest = await ingestSamOpportunities(30);
+    // SAM.gov is the largest source but occasionally returns 503 "no healthy
+    // upstream". Don't let a SAM failure abort grants, archiving, scoring,
+    // and email — record the error and continue with the remaining sources.
+    let ingest: Awaited<ReturnType<typeof ingestSamOpportunities>> = {
+      fetched: 0,
+      upserted: 0,
+      naics_codes: [],
+    };
+    let samError: string | undefined;
+    try {
+      ingest = await ingestSamOpportunities(30);
+    } catch (error) {
+      samError = error instanceof Error ? error.message : "SAM ingest failed";
+    }
+
     let sledIngest: Awaited<ReturnType<typeof ingestAllEnabledSled>> | undefined;
     let grantsIngest: Awaited<ReturnType<typeof ingestAllEnabledGrants>> | undefined;
     try {
@@ -99,6 +114,7 @@ export async function runDailyPipeline(): Promise<DailyPipelineResult> {
     return {
       digest_id: digestId,
       ingest,
+      sam_error: samError,
       archived: archivedCount,
       sled_ingest: sledIngest
         ? {

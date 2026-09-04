@@ -59,8 +59,12 @@ export class SamGovClient {
     });
 
     if (!res.ok) {
-      const body = await res.text();
-      throw new Error(`SAM.gov search failed (${res.status}): ${body.slice(0, 300)}`);
+      const body = (await res.text()).slice(0, 300);
+      const hint =
+        res.status === 503 || res.status === 401 || res.status === 403
+          ? " — verify SAM_GOV_API_KEY is active at api.sam.gov (a 503 'no healthy upstream' is often an invalid/revoked key)."
+          : "";
+      throw new Error(`SAM.gov search failed (${res.status}): ${body}${hint}`);
     }
 
     const data = (await res.json()) as SamSearchResponse;
