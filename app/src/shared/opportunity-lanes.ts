@@ -34,7 +34,7 @@ export const OPPORTUNITY_LANES: OpportunityLane[] = [
     id: "illinois",
     label: "Illinois (home)",
     href: "/opportunities?lane=illinois",
-    description: "BidBuy Illinois — DFEAL home state priority",
+    description: "BidBuy Illinois state procurement",
     source: "bidbuy_il",
     marketTier: "state",
     phase: 3,

@@ -10,7 +10,7 @@
 
 - Opportunity: {{OPPORTUNITY_TITLE}}
 - Agency / Prime: {{AGENCY_NAME}}
-- DFEAL: {{LEGAL_NAME}} · UEI {{UEI}} · CAGE {{CAGE}}
+- {{SHORT_NAME}}: {{LEGAL_NAME}} · UEI {{UEI}} · CAGE {{CAGE}}
 - NAICS: {{PRIMARY_NAICS}}
 - Capability summary and certifications
 - Relevant NAICS and PSC codes
@@ -18,7 +18,7 @@
 
 ## 3. Proposed contribution
 
-- Scope elements DFEAL would perform
+- Scope elements {{SHORT_NAME}} would perform
 - Technical approach for assigned work share
 - Key personnel and availability
 

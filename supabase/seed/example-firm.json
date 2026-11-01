@@ -1,0 +1,31 @@
+{
+  "legalName": "Acme Federal Solutions LLC",
+  "shortName": "Acme Federal",
+  "uei": "ABCDEFGH1234",
+  "cage": "1A2B3",
+  "industry": "it_services",
+  "primaryNaics": "541512",
+  "naicsCodes": ["541511", "541519", "518210"],
+  "keywords": ["cloud", "cybersecurity", "software", "devops", "help desk"],
+  "setAsides": ["Small Business", "SDVOSB"],
+  "certifications": ["ISO 27001", "CMMI-DEV Level 3"],
+  "homeState": "VA",
+  "targetStates": ["MD", "DC"],
+  "capabilityStatement": "Acme Federal delivers secure cloud migration, DevSecOps and application modernization for civilian and defense agencies.",
+  "coreCompetencies": ["Cloud migration (AWS GovCloud, Azure Government)", "DevSecOps pipelines", "Zero-trust security"],
+  "differentiators": ["Service-disabled veteran-owned", "FedRAMP-experienced engineering team"],
+  "pastPerformance": [
+    { "contractName": "Cloud Hosting Modernization", "agency": "Department of Veterans Affairs", "period": "2023–2025", "scope": "Migrated 40 applications to AWS GovCloud." }
+  ],
+  "goNoGo": {
+    "minContractValueUsd": 250000,
+    "minDaysToDeadline": 7,
+    "preferredSetAsides": ["SDVOSB", "Small Business", "None", "Unrestricted"],
+    "priorityAgencies": ["Veterans Affairs", "Defense Information Systems Agency"],
+    "excludedAgencies": []
+  },
+  "contactEmail": "bd@acmefederal.example",
+  "website": "https://acmefederal.example",
+  "allowedEmailDomains": ["acmefederal.example"],
+  "digestRecipients": ["bd@acmefederal.example"]
+}

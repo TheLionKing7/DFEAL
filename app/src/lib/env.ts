@@ -59,14 +59,14 @@ export function getGroqModel(): string {
 
 export function getSamOpportunitiesUrl(): string {
   return (
-    process.env.SAM_GOV_OPPORTUNITIES_URL?.trim() ??
+    optionalEnv("SAM_GOV_OPPORTUNITIES_URL") ??
     "https://api.sam.gov/prod/opportunities/v2/search"
   );
 }
 
 export function getSamEntityUrl(): string {
   return (
-    process.env.SAM_ENTITY_API_BASE?.trim() ??
+    optionalEnv("SAM_ENTITY_API_BASE") ??
     "https://api.sam.gov/entity-information/v3/entities"
   );
 }
@@ -96,4 +96,12 @@ export function samDateRange(daysBack = 30): { postedFrom: string; postedTo: str
   const from = new Date();
   from.setDate(from.getDate() - daysBack);
   return { postedFrom: formatSamDate(from), postedTo: formatSamDate(to) };
+}
+
+/** Public base URL (magic links, digest links). */
+export function getSiteUrl(): string {
+  return (
+    optionalEnv("NEXT_PUBLIC_SITE_URL")?.replace(/\/$/, "") ??
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000")
+  );
 }

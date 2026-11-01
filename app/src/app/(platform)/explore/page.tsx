@@ -6,13 +6,15 @@ import {
   RelevantVendorsSection,
 } from "@/components/explore/ExploreSections";
 import { PageShell } from "@/components/layout/PageShell";
-import { SMART_CAPTURE, TENANT } from "@/config/platform";
+import { SMART_CAPTURE } from "@/config/platform";
+import { requireFirmPage } from "@/lib/firms/context";
 import { loadExplorePageData } from "@/lib/db/explore-data";
 import { isDatabaseConfigured } from "@/lib/db/supabase-admin";
 
 export const dynamic = "force-dynamic";
 
 export default async function ExplorePage() {
+  const { firm } = await requireFirmPage();
   let featured: Awaited<ReturnType<typeof loadExplorePageData>>["featured"] = [];
   let recommended: Awaited<ReturnType<typeof loadExplorePageData>>["recommended"] = [];
   let popularLanes: Awaited<ReturnType<typeof loadExplorePageData>>["popularLanes"] = [];
@@ -21,7 +23,7 @@ export default async function ExplorePage() {
 
   if (isDatabaseConfigured()) {
     try {
-      const data = await loadExplorePageData();
+      const data = await loadExplorePageData(firm);
       featured = data.featured;
       recommended = data.recommended;
       popularLanes = data.popularLanes;
@@ -39,7 +41,7 @@ export default async function ExplorePage() {
         <p className="text-sm font-medium text-gold">{SMART_CAPTURE.tagline}</p>
         <h1 className="mt-1 text-2xl font-bold text-text">Explore</h1>
         <p className="mt-1 text-sm text-text-muted">
-          Contract intelligence for {TENANT.legalName} — powered by {SMART_CAPTURE.name}.
+          Contract intelligence for {firm.legalName} — powered by {SMART_CAPTURE.name}.
         </p>
       </div>
 

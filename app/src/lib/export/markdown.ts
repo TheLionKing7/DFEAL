@@ -1,5 +1,5 @@
 /**
- * Markdown cleanup utilities for DFEAL document generation.
+ * Markdown cleanup utilities for document generation.
  *
  * Pure string transforms with no external dependencies, so they are safe
  * to use on both the server (before saving / rendering) and the client

@@ -1,5 +1,5 @@
 import { fetchBidBuyIllinoisOpportunities } from "@/lib/sled/bidbuy-illinois";
-import { matchesDfealSledKeywords, sledOpportunityId } from "@/lib/sled/normalize";
+import { matchesSledKeywords, sledOpportunityId } from "@/lib/sled/normalize";
 import type { SledFetchOptions, SledFetchResult } from "@/lib/sled/types";
 import type { Opportunity } from "@/shared/types/opportunity";
 
@@ -80,7 +80,7 @@ export async function fetchIllinoisEducationOpportunities(
 
   const educationFromBidbuy = bidbuy.opportunities
     .filter(isEducationAgency)
-    .filter((opp) => matchesDfealSledKeywords(opp.title, opp.description))
+    .filter((opp) => matchesSledKeywords(opp.title, opp.description))
     .map(tagEducation);
 
   const references = [cpsReferenceOpportunity()];

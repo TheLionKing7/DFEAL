@@ -1,11 +1,13 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/login", "/auth/callback"];
+const PUBLIC_PATHS = ["/login", "/auth/callback", "/api/auth/magic-link", "/setup-required"];
 
 function isPublicPath(pathname: string): boolean {
-  if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) return true;
-  if (pathname.startsWith("/api/cron")) return true;
+  if (pathname === "/") return true;
+  if (PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))) return true;
+  // Cron routes authenticate with CRON_SECRET instead of a session.
+  if (pathname.startsWith("/api/cron/")) return true;
   return false;
 }
 
@@ -40,6 +42,9 @@ export async function updateSession(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (!user && !isPublicPath(pathname)) {
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("next", pathname);

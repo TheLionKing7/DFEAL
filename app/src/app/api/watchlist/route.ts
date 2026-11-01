@@ -1,76 +1,66 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireApiUser } from "@/lib/auth/api-user";
-import {
-  addPursuit,
-  listPursuits,
-  removePursuit,
-  updatePursuit,
-} from "@/lib/db/pursuits";
-import { isDatabaseConfigured } from "@/lib/db/supabase-admin";
-import type { PursuitStage } from "@/shared/opportunity-lanes";
+import { addPursuit, listPursuits, removePursuit, updatePursuit } from "@/lib/db/pursuits";
+import { requireFirmApi } from "@/lib/firms/context";
+import { badRequest, readJson, serverError } from "@/lib/http/json";
+import { PURSUIT_STAGES, type PursuitStage } from "@/shared/opportunity-lanes";
 
 export async function GET() {
-  const user = await requireApiUser();
-  if (!user?.email) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!isDatabaseConfigured()) {
-    return NextResponse.json({ error: "Database not configured" }, { status: 500 });
+  const ctx = await requireFirmApi();
+  if (ctx instanceof NextResponse) return ctx;
+  try {
+    return NextResponse.json({ pursuits: await listPursuits(ctx.firm.id, ctx.user.email) });
+  } catch (error) {
+    return serverError("api.watchlist.get_failed", error);
   }
-
-  const pursuits = await listPursuits(user.email);
-  return NextResponse.json({ pursuits });
 }
 
 export async function POST(request: NextRequest) {
-  const user = await requireApiUser();
-  if (!user?.email) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!isDatabaseConfigured()) {
-    return NextResponse.json({ error: "Database not configured" }, { status: 500 });
-  }
+  const ctx = await requireFirmApi();
+  if (ctx instanceof NextResponse) return ctx;
 
-  const body = (await request.json()) as { opportunity_id?: string; notes?: string };
-  if (!body.opportunity_id) {
-    return NextResponse.json({ error: "opportunity_id required" }, { status: 400 });
-  }
+  const body = await readJson<{ opportunity_id?: string; notes?: string }>(request);
+  if (!body?.opportunity_id) return badRequest("opportunity_id required");
 
-  const pursuit = await addPursuit(user.email, body.opportunity_id, body.notes);
-  return NextResponse.json({ ok: true, pursuit });
+  try {
+    const pursuit = await addPursuit(ctx.firm.id, ctx.user.email, body.opportunity_id, body.notes?.slice(0, 4000));
+    return NextResponse.json({ ok: true, pursuit });
+  } catch (error) {
+    return serverError("api.watchlist.post_failed", error);
+  }
 }
 
 export async function PATCH(request: NextRequest) {
-  const user = await requireApiUser();
-  if (!user?.email) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!isDatabaseConfigured()) {
-    return NextResponse.json({ error: "Database not configured" }, { status: 500 });
+  const ctx = await requireFirmApi();
+  if (ctx instanceof NextResponse) return ctx;
+
+  const body = await readJson<{ opportunity_id?: string; notes?: string; pursuit_stage?: PursuitStage }>(request);
+  if (!body?.opportunity_id) return badRequest("opportunity_id required");
+  if (body.pursuit_stage && !PURSUIT_STAGES.some((s) => s.id === body.pursuit_stage)) {
+    return badRequest("Invalid pursuit_stage");
   }
 
-  const body = (await request.json()) as {
-    opportunity_id?: string;
-    notes?: string;
-    pursuit_stage?: PursuitStage;
-  };
-  if (!body.opportunity_id) {
-    return NextResponse.json({ error: "opportunity_id required" }, { status: 400 });
+  try {
+    const pursuit = await updatePursuit(ctx.firm.id, ctx.user.email, body.opportunity_id, {
+      notes: body.notes?.slice(0, 4000),
+      pursuit_stage: body.pursuit_stage,
+    });
+    return NextResponse.json({ ok: true, pursuit });
+  } catch (error) {
+    return serverError("api.watchlist.patch_failed", error);
   }
-
-  const pursuit = await updatePursuit(user.email, body.opportunity_id, {
-    notes: body.notes,
-    pursuit_stage: body.pursuit_stage,
-  });
-  return NextResponse.json({ ok: true, pursuit });
 }
 
 export async function DELETE(request: NextRequest) {
-  const user = await requireApiUser();
-  if (!user?.email) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!isDatabaseConfigured()) {
-    return NextResponse.json({ error: "Database not configured" }, { status: 500 });
-  }
+  const ctx = await requireFirmApi();
+  if (ctx instanceof NextResponse) return ctx;
 
   const opportunityId = request.nextUrl.searchParams.get("opportunity_id");
-  if (!opportunityId) {
-    return NextResponse.json({ error: "opportunity_id required" }, { status: 400 });
-  }
+  if (!opportunityId) return badRequest("opportunity_id required");
 
-  await removePursuit(user.email, opportunityId);
-  return NextResponse.json({ ok: true });
+  try {
+    await removePursuit(ctx.firm.id, ctx.user.email, opportunityId);
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    return serverError("api.watchlist.delete_failed", error);
+  }
 }

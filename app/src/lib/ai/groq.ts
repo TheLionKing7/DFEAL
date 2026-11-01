@@ -1,17 +1,21 @@
 import Groq from "groq-sdk";
 import { getGroqApiKey, getGroqModel } from "@/lib/env";
-import { buildDfealSystemPrompt } from "@/config/dfeal-profile";
 
 let client: Groq | null = null;
 
 function getClient(): Groq {
   if (!client) {
-    client = new Groq({ apiKey: getGroqApiKey() });
+    client = new Groq({
+      apiKey: getGroqApiKey(),
+      timeout: Number(process.env.LLM_TIMEOUT_MS ?? 90_000),
+      maxRetries: 1,
+    });
   }
   return client;
 }
 
 export async function groqComplete(options: {
+  system: string;
   userPrompt: string;
   maxTokens?: number;
 }): Promise<string> {
@@ -19,7 +23,7 @@ export async function groqComplete(options: {
     model: getGroqModel(),
     max_tokens: options.maxTokens ?? 2048,
     messages: [
-      { role: "system", content: buildDfealSystemPrompt() },
+      { role: "system", content: options.system },
       { role: "user", content: options.userPrompt },
     ],
   });

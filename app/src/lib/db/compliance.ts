@@ -12,11 +12,12 @@ export interface ComplianceRun {
   created_at: string;
 }
 
-export async function listComplianceRuns(opportunityId: string, limit = 5) {
+export async function listComplianceRuns(firmId: string, opportunityId: string, limit = 5) {
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase
     .from("compliance_runs")
     .select("*")
+    .eq("firm_id", firmId)
     .eq("opportunity_id", opportunityId)
     .order("created_at", { ascending: false })
     .limit(limit);
@@ -26,6 +27,7 @@ export async function listComplianceRuns(opportunityId: string, limit = 5) {
 }
 
 export async function saveComplianceRun(input: {
+  firm_id: string;
   opportunity_id: string;
   document_id?: string;
   provider: string;

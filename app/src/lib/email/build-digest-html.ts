@@ -1,4 +1,4 @@
-import { DFEAL_PROFILE } from "@/config/dfeal-profile";
+import { SMART_CAPTURE } from "@/config/platform";
 
 type DigestOpportunity = {
   title: string;
@@ -35,12 +35,13 @@ export function buildDailyDigestHtml(options: {
   ingested: number;
   opportunities: DigestOpportunity[];
   exploreUrl: string;
+  firmName: string;
 }): string {
-  const { hotCount, scored, ingested, opportunities, exploreUrl } = options;
+  const { hotCount, scored, ingested, opportunities, exploreUrl, firmName } = options;
   const rows = opportunities
     .map((opp) => {
       const link = opp.sam_url
-        ? `<a href="${escapeHtml(opp.sam_url)}" style="color:#c9a84c">SAM.gov</a>`
+        ? `<a href="${escapeHtml(opp.sam_url)}" style="color:#c9a84c">Source</a>`
         : "";
       return `
         <tr>
@@ -75,13 +76,13 @@ export function buildDailyDigestHtml(options: {
   <div style="max-width:640px;margin:0 auto;padding:32px 16px">
     <div style="background:#0f2744;color:#fff;padding:24px;border-radius:12px 12px 0 0">
       <p style="margin:0;font-size:12px;letter-spacing:0.1em;text-transform:uppercase;color:#c9a84c">Daily digest</p>
-      <h1 style="margin:8px 0 0;font-size:22px">${escapeHtml(DFEAL_PROFILE.productName)}</h1>
+      <h1 style="margin:8px 0 0;font-size:22px">${escapeHtml(SMART_CAPTURE.name)} · ${escapeHtml(firmName)}</h1>
     </div>
     <div style="background:#fff;border:1px solid #e2e8f0;border-top:none;padding:24px;border-radius:0 0 12px 12px">
       <p style="margin:0 0 16px">
         <strong>${hotCount}</strong> hot opportunities ·
         <strong>${scored}</strong> scored ·
-        <strong>${ingested}</strong> ingested from SAM.gov
+        <strong>${ingested}</strong> new or updated notices
       </p>
       ${
         opportunities.length === 0
@@ -105,7 +106,7 @@ export function buildDailyDigestHtml(options: {
       </p>
     </div>
     <p style="margin:16px 0 0;font-size:12px;color:#64748b;text-align:center">
-      ${escapeHtml(DFEAL_PROFILE.legalName)} · Internal use only
+      ${escapeHtml(firmName)} · Internal use only
     </p>
   </div>
 </body>

@@ -13,7 +13,8 @@ export interface GeneratedDocument {
   created_at: string;
 }
 
-export async function listDocuments(options?: {
+export async function listDocuments(options: {
+  firmId: string;
   opportunityId?: string;
   userEmail?: string;
   limit?: number;
@@ -22,13 +23,14 @@ export async function listDocuments(options?: {
   let query = supabase
     .from("generated_documents")
     .select("*")
+    .eq("firm_id", options.firmId)
     .order("created_at", { ascending: false })
-    .limit(options?.limit ?? 50);
+    .limit(options.limit ?? 50);
 
-  if (options?.opportunityId) {
+  if (options.opportunityId) {
     query = query.eq("opportunity_id", options.opportunityId);
   }
-  if (options?.userEmail) {
+  if (options.userEmail) {
     query = query.eq("created_by", options.userEmail);
   }
 
@@ -38,6 +40,7 @@ export async function listDocuments(options?: {
 }
 
 export async function saveDocument(input: {
+  firm_id: string;
   opportunity_id: string;
   document_type: DocumentType;
   title: string;
@@ -49,6 +52,7 @@ export async function saveDocument(input: {
   const { data, error } = await supabase
     .from("generated_documents")
     .insert({
+      firm_id: input.firm_id,
       opportunity_id: input.opportunity_id,
       document_type: input.document_type,
       title: input.title,
@@ -65,11 +69,12 @@ export async function saveDocument(input: {
   return data as GeneratedDocument;
 }
 
-export async function getDocument(id: string) {
+export async function getDocument(firmId: string, id: string) {
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase
     .from("generated_documents")
     .select("*")
+    .eq("firm_id", firmId)
     .eq("id", id)
     .maybeSingle();
 

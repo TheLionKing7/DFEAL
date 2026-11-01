@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { PageHeader, PageShell, Panel } from "@/components/layout/PageShell";
-import { DFEAL_PROFILE } from "@/config/dfeal-profile";
+import { useFirm } from "@/components/firm/FirmProvider";
 import {
   formatRegistrationLabel,
   formatSamEntityDate,
@@ -146,9 +146,10 @@ function Field({
 }
 
 export default function EntityPage() {
+  const firm = useFirm();
   const [mode, setMode] = useState<LookupMode>("id");
-  const [uei, setUei] = useState(DFEAL_PROFILE.uei);
-  const [cage, setCage] = useState(DFEAL_PROFILE.cage);
+  const [uei, setUei] = useState(firm.uei ?? "");
+  const [cage, setCage] = useState(firm.cage ?? "");
   const [name, setName] = useState("");
   const [entity, setEntity] = useState<SamEntity | null>(null);
   const [results, setResults] = useState<SamEntity[]>([]);
@@ -322,7 +323,7 @@ export default function EntityPage() {
       {suggestions.length > 0 && (
         <Panel className="mt-4 space-y-2">
           <p className="text-sm font-semibold text-text">
-            Possible SAM matches for {DFEAL_PROFILE.legalName}
+            Possible SAM matches for {firm.legalName}
           </p>
           <ul className="divide-y divide-border">
             {suggestions.map((r) => (
@@ -357,7 +358,7 @@ export default function EntityPage() {
         <p className="mt-4 text-sm text-text-muted">
           Verify registration at{" "}
           <a
-            href="https://sam.gov/search/?index=entity&page=1&pageSize=25&sfm%5BsimpleSearch%5D%5BkeywordRadio%5D=ALL&sfm%5BsimpleSearch%5D%5BkeywordTag%5D=DFEAL"
+            href={`https://sam.gov/search/?index=entity&page=1&pageSize=25&sfm%5BsimpleSearch%5D%5BkeywordRadio%5D=ALL&sfm%5BsimpleSearch%5D%5BkeywordTag%5D=${encodeURIComponent(firm.legalName)}`}
             target="_blank"
             rel="noreferrer"
             className="text-gold hover:underline"

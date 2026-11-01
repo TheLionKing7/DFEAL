@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { PageHeader, PageShell } from "@/components/layout/PageShell";
 import { OpportunityHoverActions } from "@/components/opportunity/OpportunityHoverActions";
-import { SMART_CAPTURE, TENANT } from "@/config/platform";
+import { SMART_CAPTURE } from "@/config/platform";
+import { useFirm } from "@/components/firm/FirmProvider";
 import type { BriefingEntry, DailyBriefingData } from "@/lib/briefing/build-briefing";
 import { cn } from "@/shared/cn";
 
@@ -16,6 +17,7 @@ const CATEGORY_STYLE: Record<BriefingEntry["category"], string> = {
 };
 
 export default function BriefingPage() {
+  const firm = useFirm();
   const [briefing, setBriefing] = useState<DailyBriefingData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -44,7 +46,7 @@ export default function BriefingPage() {
     <PageShell className="max-w-4xl">
       <PageHeader
         title="Daily Briefing"
-        description={`Live capture journal for ${TENANT.legalName} — industry pulse, hot opportunities, and deadlines.`}
+        description={`Live capture journal for ${firm.legalName} — industry pulse, hot opportunities, and deadlines.`}
       />
 
       <div className="mb-6 flex flex-wrap items-center gap-3 rounded-xl border border-border bg-bg-surface px-4 py-3 text-sm">

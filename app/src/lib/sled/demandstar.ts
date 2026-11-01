@@ -6,7 +6,7 @@ import {
 } from "@/lib/sled/demandstar-client";
 import {
   governmentTypeToMarketTier,
-  matchesDfealSledKeywords,
+  matchesSledKeywords,
   parseSledDate,
   sledOpportunityId,
 } from "@/lib/sled/normalize";
@@ -145,7 +145,7 @@ export async function fetchDemandStarOpportunities(
         if (options.keyword && !title.toLowerCase().includes(options.keyword.toLowerCase())) {
           continue;
         }
-        if (!matchesDfealSledKeywords(title, row.agency)) continue;
+        if (!matchesSledKeywords(title, row.agency)) continue;
 
         const key = String(row.bidId);
         if (seen.has(key)) continue;
@@ -164,8 +164,8 @@ export async function fetchDemandStarOpportunities(
       opportunities,
       message:
         states.length > 0
-          ? `Active DemandStar bids (${states.join(", ")}) — ${opportunities.length} matched DFEAL keywords`
-          : `Active DemandStar bids nationwide — ${opportunities.length} matched DFEAL keywords`,
+          ? `Active DemandStar bids (${states.join(", ")}) — ${opportunities.length} matched firm keywords`
+          : `Active DemandStar bids nationwide — ${opportunities.length} matched firm keywords`,
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : "DemandStar ingest failed";

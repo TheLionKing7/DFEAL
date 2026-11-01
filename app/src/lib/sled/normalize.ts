@@ -47,7 +47,8 @@ export function governmentTypeToMarketTier(
   return "state";
 }
 
-const DFEAL_SLED_KEYWORDS = [
+/** Baseline relevance terms for professional-services bids; firm keywords are added on top. */
+const BASE_SLED_KEYWORDS = [
   "consult",
   "management",
   "advisory",
@@ -65,7 +66,16 @@ const DFEAL_SLED_KEYWORDS = [
   "logistics",
 ];
 
-export function matchesDfealSledKeywords(title: string, description?: string | null): boolean {
+let activeKeywords: string[] = BASE_SLED_KEYWORDS;
+
+/** Set the keyword filter for this ingest run (union of all active firms' keywords). */
+export function setSledKeywordFilter(firmKeywords: string[]) {
+  activeKeywords = [
+    ...new Set([...BASE_SLED_KEYWORDS, ...firmKeywords.map((k) => k.toLowerCase().trim()).filter((k) => k.length >= 3)]),
+  ];
+}
+
+export function matchesSledKeywords(title: string, description?: string | null): boolean {
   const haystack = `${title} ${description ?? ""}`.toLowerCase();
-  return DFEAL_SLED_KEYWORDS.some((kw) => haystack.includes(kw));
+  return activeKeywords.some((kw) => haystack.includes(kw));
 }

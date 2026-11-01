@@ -4,8 +4,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAssistant } from "@/components/assistant/AssistantContext";
 import { AssistantSettingsMenu } from "@/components/assistant/AssistantSettingsMenu";
-import { TENANT } from "@/config/platform";
+import { useFirm } from "@/components/firm/FirmProvider";
 import { cn } from "@/shared/cn";
+
+/** Wall-clock read kept outside the component body (React compiler purity rule). */
+function nowMs() {
+  return Date.now();
+}
 
 export function AssistantSidebarNav({
   onNewChat,
@@ -30,6 +35,7 @@ export function AssistantSidebarNav({
   trackItems: { opportunity_id: string; title?: string }[];
   favoriteItems: { opportunity_id: string; title?: string }[];
 }) {
+  const firm = useFirm();
   const router = useRouter();
   const { closeAssistant } = useAssistant();
 
@@ -39,7 +45,7 @@ export function AssistantSidebarNav({
   }
 
   function timeAgo(iso: string) {
-    const diff = Date.now() - new Date(iso).getTime();
+    const diff = nowMs() - new Date(iso).getTime();
     const mins = Math.floor(diff / 60000);
     if (mins < 60) return `${Math.max(1, mins)} minute${mins === 1 ? "" : "s"} ago`;
     const hrs = Math.floor(mins / 60);
@@ -52,7 +58,7 @@ export function AssistantSidebarNav({
   return (
     <aside className="hidden shrink-0 flex-col border-r border-border bg-bg-surface md:flex md:w-56 lg:w-64">
       <div className="border-b border-border px-4 py-3">
-        <p className="text-sm font-semibold text-text">{TENANT.assistantName}</p>
+        <p className="text-sm font-semibold text-text">{firm.assistantName}</p>
       </div>
 
       {/* Section 1 — New chat, search, conversations */}

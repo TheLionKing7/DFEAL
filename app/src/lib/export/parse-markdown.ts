@@ -1,5 +1,5 @@
 /**
- * Shared inline-markdown parser for DFEAL document generation.
+ * Shared inline-markdown parser for document generation.
  * Converts markdown text into a list of styled segments that
  * PDF and DOCX renderers can consume without raw markdown artifacts.
  */

@@ -1,4 +1,5 @@
-import { buildDfealSystemPrompt } from "@/config/dfeal-profile";
+import { buildFirmSystemPrompt } from "@/lib/firms/prompt";
+import type { FirmProfile } from "@/lib/firms/types";
 import { llmComplete } from "@/lib/ai/complete";
 import { parseJsonFromLlm } from "@/lib/ai/parse-json";
 import { saveComplianceRun } from "@/lib/db/compliance";
@@ -23,10 +24,11 @@ export interface ComplianceResult {
 
 export async function validateOpportunityCompliance(input: {
   opp: Opportunity;
+  firm: FirmProfile;
   documentContent?: string;
   documentId?: string;
 }) {
-  const { opp, documentContent, documentId } = input;
+  const { opp, firm, documentContent, documentId } = input;
 
   const userPrompt = [
     "You are a federal proposal compliance reviewer for Section L (instructions) and Section M (evaluation criteria).",
@@ -45,7 +47,8 @@ export async function validateOpportunityCompliance(input: {
   ].join("\n");
 
   const { text, provider } = await llmComplete({
-    userPrompt: `${buildDfealSystemPrompt()}\n\n${userPrompt}`,
+    system: buildFirmSystemPrompt(firm),
+    userPrompt,
     maxTokens: 2500,
   });
 
@@ -67,6 +70,7 @@ export async function validateOpportunityCompliance(input: {
   const failCount = items.filter((i) => i.status === "fail").length;
 
   const run = await saveComplianceRun({
+    firm_id: firm.id,
     opportunity_id: opp.id,
     document_id: documentId,
     provider,

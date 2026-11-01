@@ -12,7 +12,7 @@
 
 - Mission-aligned opening paragraph for {{OPPORTUNITY_TITLE}}
 - Win themes and differentiators (3–5 bullets)
-- Why DFEAL is qualified for this requirement
+- Why {{SHORT_NAME}} is qualified for this requirement
 - Set-aside / small business positioning when applicable
 
 ## 3. Company overview
@@ -21,10 +21,10 @@
 - UEI: {{UEI}} · CAGE: {{CAGE}} · SAM status: {{SAM_STATUS}}
 - Primary NAICS: {{PRIMARY_NAICS}}
 - Contact: {{CONTACT_EMAIL}} · {{PHONE}} · {{WEBSITE}}
-- Capability narrative (from DFEAL profile — healthcare, PMO, research, procurement)
+- Capability narrative (from the firm profile — core competencies and differentiators)
 - Core competencies (bulleted)
 - Certifications and designations
-- Geographic focus and Illinois home-state presence
+- Geographic focus and home-state presence
 
 ## 4. Technical approach
 
@@ -36,7 +36,7 @@
 ## 5. Past performance
 
 - 3–5 relevant contracts with agency, period, scope, outcomes
-- Emphasize healthcare, research, program management, and supply parallels
+- Emphasize parallels between past performance and this requirement
 - Reference contacts where appropriate
 
 ## 6. Management plan

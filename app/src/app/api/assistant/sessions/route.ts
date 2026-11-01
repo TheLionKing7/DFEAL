@@ -1,41 +1,39 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireApiUser } from "@/lib/auth/api-user";
-import {
-  getChatMessages,
-  listChatSessions,
-  updateChatSessionTitle,
-} from "@/lib/db/chat";
-import { isDatabaseConfigured } from "@/lib/db/supabase-admin";
+import { getChatMessages, listChatSessions, updateChatSessionTitle } from "@/lib/db/chat";
+import { requireFirmApi } from "@/lib/firms/context";
+import { badRequest, readJson, serverError } from "@/lib/http/json";
 
 export async function GET(request: NextRequest) {
-  const user = await requireApiUser();
-  if (!user?.email) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!isDatabaseConfigured()) {
-    return NextResponse.json({ sessions: [] });
-  }
+  const ctx = await requireFirmApi();
+  if (ctx instanceof NextResponse) return ctx;
+  const scope = { firmId: ctx.firm.id, userEmail: ctx.user.email };
 
-  const sessionId = request.nextUrl.searchParams.get("session_id");
-  if (sessionId) {
-    const messages = await getChatMessages(sessionId);
-    return NextResponse.json({ messages });
+  try {
+    const sessionId = request.nextUrl.searchParams.get("session_id");
+    if (sessionId) {
+      return NextResponse.json({ messages: await getChatMessages(scope, sessionId) });
+    }
+    return NextResponse.json({ sessions: await listChatSessions(scope, 30) });
+  } catch (error) {
+    return serverError("api.sessions.get_failed", error);
   }
-
-  const sessions = await listChatSessions(user.email, 30);
-  return NextResponse.json({ sessions });
 }
 
 export async function PATCH(request: NextRequest) {
-  const user = await requireApiUser();
-  if (!user?.email) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!isDatabaseConfigured()) {
-    return NextResponse.json({ error: "Database not configured" }, { status: 500 });
-  }
+  const ctx = await requireFirmApi();
+  if (ctx instanceof NextResponse) return ctx;
 
-  const body = (await request.json()) as { session_id?: string; title?: string };
-  if (!body.session_id || !body.title?.trim()) {
-    return NextResponse.json({ error: "session_id and title required" }, { status: 400 });
-  }
+  const body = await readJson<{ session_id?: string; title?: string }>(request);
+  if (!body?.session_id || !body.title?.trim()) return badRequest("session_id and title required");
 
-  await updateChatSessionTitle(body.session_id, body.title.trim());
-  return NextResponse.json({ ok: true });
+  try {
+    await updateChatSessionTitle(
+      { firmId: ctx.firm.id, userEmail: ctx.user.email },
+      body.session_id,
+      body.title.trim().slice(0, 120),
+    );
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    return serverError("api.sessions.patch_failed", error);
+  }
 }

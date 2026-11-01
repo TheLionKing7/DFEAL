@@ -1,4 +1,3 @@
-import { getDfealNaicsCodes } from "@/config/dfeal-profile";
 import {
   baseGrantOpportunity,
   grantOpportunityId,
@@ -30,19 +29,14 @@ interface Search2Response {
   };
 }
 
-function dfealGrantKeywords(): string[] {
-  return [
-    "health",
-    "healthcare",
-    "clinical",
-    "research",
-    "program management",
-    "consulting",
-    "training",
-    "medical",
-    "biomedical",
-    "NIH",
-  ];
+const BASE_GRANT_KEYWORDS = ["research", "program management", "training", "technical assistance"];
+const MAX_GRANT_KEYWORD_QUERIES = 20;
+
+function grantKeywords(firmKeywords: string[] = []): string[] {
+  return [...new Set([...firmKeywords.map((k) => k.toLowerCase()), ...BASE_GRANT_KEYWORDS])].slice(
+    0,
+    MAX_GRANT_KEYWORD_QUERIES,
+  );
 }
 
 async function searchGrantsGov(params: {
@@ -112,7 +106,7 @@ export async function fetchGrantsGovOpportunities(
   const queries: { keyword?: string; agencies?: string; label: string }[] = [
     { agencies: "HHS-NIH11", label: "NIH" },
     { agencies: "HHS", label: "HHS" },
-    ...dfealGrantKeywords().map((keyword) => ({ keyword, label: keyword })),
+    ...grantKeywords(options.keywords).map((keyword) => ({ keyword, label: keyword })),
   ];
 
   if (options.keyword) {
@@ -146,12 +140,11 @@ export async function fetchGrantsGovOpportunities(
     }
   }
 
-  const naics = getDfealNaicsCodes();
   return {
     source: "grants_gov",
     fetched: merged.length,
     opportunities: merged.slice(0, limit),
-    message: `Grants.gov: ${merged.length} posted/forecasted grants (NIH/HHS + DFEAL keywords; NAICS ${naics.join(", ")})`,
+    message: `Grants.gov: ${merged.length} posted/forecasted grants (NIH/HHS + firm keywords)`,
   };
 }
 

@@ -37,7 +37,7 @@ interface OverviewSummary {
   scope_of_work: string;
   key_requirements: string[];
   important_dates: string[];
-  dfeal_fit: string;
+  firm_fit: string;
   recommended_next_steps: string[];
   provider: string;
   cached?: boolean;
@@ -380,8 +380,8 @@ export function OpportunityWorkspace({
                   <p className="mt-1 whitespace-pre-wrap text-text-muted">{overview.scope_of_work}</p>
                 </div>
                 <div>
-                  <h3 className="font-semibold">DFEAL fit</h3>
-                  <p className="mt-1 text-text-muted">{overview.dfeal_fit}</p>
+                  <h3 className="font-semibold">Firm fit</h3>
+                  <p className="mt-1 text-text-muted">{overview.firm_fit}</p>
                 </div>
                 <BulletSection title="Key requirements" items={overview.key_requirements} />
                 <BulletSection title="Important dates" items={overview.important_dates} />

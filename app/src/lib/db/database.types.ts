@@ -32,9 +32,73 @@ type OpportunityRow = {
   updated_at: string;
 };
 
+export type FirmRow = {
+  id: string;
+  slug: string;
+  status: string;
+  legal_name: string;
+  short_name: string;
+  uei: string | null;
+  cage: string | null;
+  duns: string | null;
+  sam_status: string;
+  sam_expiration_date: string | null;
+  industry: string;
+  primary_naics: string;
+  naics_codes: string[];
+  psc_codes: string[];
+  keywords: string[];
+  set_asides: string[];
+  certifications: string[];
+  home_state: string | null;
+  target_states: string[];
+  capability_statement: string;
+  core_competencies: string[];
+  differentiators: string[];
+  past_performance: Json;
+  go_no_go: Json;
+  contact_email: string | null;
+  phone: string | null;
+  website: string | null;
+  address: string | null;
+  assistant_name: string | null;
+  allowed_email_domains: string[];
+  digest_recipients: string[];
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 export interface Database {
   public: {
     Tables: {
+      firms: {
+        Row: FirmRow;
+        Insert: Partial<FirmRow> &
+          Pick<FirmRow, "slug" | "legal_name" | "short_name" | "industry" | "primary_naics">;
+        Update: Partial<FirmRow>;
+        Relationships: [];
+      };
+      firm_members: {
+        Row: {
+          id: string;
+          firm_id: string;
+          email: string;
+          user_id: string | null;
+          role: string;
+          invited_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          firm_id: string;
+          email: string;
+          user_id?: string | null;
+          role?: string;
+          invited_by?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["firm_members"]["Row"]>;
+        Relationships: [];
+      };
       opportunities: {
         Row: OpportunityRow;
         Insert: Omit<OpportunityRow, "created_at" | "updated_at"> &
@@ -44,6 +108,7 @@ export interface Database {
       };
       opportunity_scores: {
         Row: {
+          firm_id: string;
           id: string;
           opportunity_id: string;
           fit_score: number;
@@ -53,11 +118,13 @@ export interface Database {
           digest_batch_id: string | null;
         };
         Insert: {
+          firm_id: string;
           opportunity_id: string;
           fit_score: number;
           go_no_go: string;
           rationale?: string;
           digest_batch_id?: string | null;
+          scored_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["opportunity_scores"]["Row"]>;
         Relationships: [];
@@ -80,6 +147,7 @@ export interface Database {
       };
       digest_runs: {
         Row: {
+          firm_id: string | null;
           id: string;
           run_type: string;
           status: string;
@@ -91,6 +159,7 @@ export interface Database {
           finished_at: string | null;
         };
         Insert: {
+          firm_id?: string | null;
           run_type?: string;
           status?: string;
         };
@@ -99,6 +168,7 @@ export interface Database {
       };
       analysis_runs: {
         Row: {
+          firm_id: string;
           id: string;
           opportunity_id: string;
           user_email: string | null;
@@ -109,6 +179,7 @@ export interface Database {
           created_at: string;
         };
         Insert: {
+          firm_id: string;
           opportunity_id: string;
           user_email?: string | null;
           provider?: string | null;
@@ -121,6 +192,7 @@ export interface Database {
       };
       watchlists: {
         Row: {
+          firm_id: string;
           id: string;
           user_email: string;
           opportunity_id: string;
@@ -130,6 +202,7 @@ export interface Database {
           updated_at: string;
         };
         Insert: {
+          firm_id: string;
           user_email: string;
           opportunity_id: string;
           notes?: string | null;
@@ -141,6 +214,7 @@ export interface Database {
       };
       generated_documents: {
         Row: {
+          firm_id: string;
           id: string;
           opportunity_id: string | null;
           document_type: string;
@@ -154,6 +228,7 @@ export interface Database {
           created_at: string;
         };
         Insert: {
+          firm_id: string;
           opportunity_id?: string | null;
           document_type?: string;
           title?: string | null;
@@ -169,6 +244,7 @@ export interface Database {
       };
       compliance_runs: {
         Row: {
+          firm_id: string;
           id: string;
           document_id: string | null;
           opportunity_id: string | null;
@@ -179,6 +255,7 @@ export interface Database {
           created_at: string;
         };
         Insert: {
+          firm_id: string;
           document_id?: string | null;
           opportunity_id?: string | null;
           provider?: string | null;
@@ -191,6 +268,7 @@ export interface Database {
       };
       chat_sessions: {
         Row: {
+          firm_id: string;
           id: string;
           user_email: string | null;
           page_context: Json;
@@ -199,6 +277,7 @@ export interface Database {
           updated_at: string;
         };
         Insert: {
+          firm_id: string;
           user_email?: string | null;
           page_context?: Json;
           title?: string | null;
@@ -226,6 +305,7 @@ export interface Database {
       };
       user_opportunity_lists: {
         Row: {
+          firm_id: string;
           id: string;
           user_email: string;
           opportunity_id: string;
@@ -233,6 +313,7 @@ export interface Database {
           created_at: string;
         };
         Insert: {
+          firm_id: string;
           user_email: string;
           opportunity_id: string;
           list_type: string;
@@ -244,6 +325,7 @@ export interface Database {
       };
       user_assistant_settings: {
         Row: {
+          firm_id: string;
           user_email: string;
           custom_instructions: string | null;
           personalization: Json;
@@ -252,6 +334,7 @@ export interface Database {
           updated_at: string;
         };
         Insert: {
+          firm_id: string;
           user_email: string;
           custom_instructions?: string | null;
           personalization?: Json;
@@ -264,6 +347,7 @@ export interface Database {
       };
       user_automations: {
         Row: {
+          firm_id: string;
           id: string;
           user_email: string;
           name: string;
@@ -274,6 +358,7 @@ export interface Database {
           updated_at: string;
         };
         Insert: {
+          firm_id: string;
           user_email: string;
           name: string;
           enabled?: boolean;
@@ -290,6 +375,7 @@ export interface Database {
     Views: {
       hot_opportunities: {
         Row: OpportunityRow & {
+          firm_id: string;
           fit_score: number;
           go_no_go: string;
           score_rationale: string;

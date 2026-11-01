@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import { SMART_CAPTURE, TENANT } from "@/config/platform";
+import { SMART_CAPTURE } from "@/config/platform";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: SMART_CAPTURE.name,
-  description: `${SMART_CAPTURE.tagline} — ${TENANT.legalName} contracting workspace`,
+  description: `${SMART_CAPTURE.tagline} — capture workspace for government contractors`,
 };
 
 export default function RootLayout({

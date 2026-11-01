@@ -1,11 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { TENANT } from "@/config/platform";
+import { useFirm } from "@/components/firm/FirmProvider";
 
 type SettingsPanel = "connectors" | "personalization" | "instructions" | "memories" | null;
 
 export function AssistantSettingsMenu() {
+  const firm = useFirm();
   const [open, setOpen] = useState(false);
   const [panel, setPanel] = useState<SettingsPanel>(null);
   const [settings, setSettings] = useState({
@@ -152,7 +153,7 @@ export function AssistantSettingsMenu() {
                     })
                   }
                 >
-                  <option value="federal_and_illinois">Federal + Illinois home state</option>
+                  <option value="federal_and_illinois">Federal + home state</option>
                   <option value="federal_only">Federal only</option>
                   <option value="sled_priority">SLED priority</option>
                   <option value="grants">Grants focus</option>
@@ -182,7 +183,7 @@ export function AssistantSettingsMenu() {
               <textarea
                 rows={6}
                 className="w-full rounded-lg border border-border bg-bg px-3 py-2 text-sm"
-                placeholder={`How should ${TENANT.assistantName} support your capture team?`}
+                placeholder={`How should ${firm.assistantName} support your capture team?`}
                 value={settings.custom_instructions}
                 onChange={(e) => setSettings((s) => ({ ...s, custom_instructions: e.target.value }))}
               />

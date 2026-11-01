@@ -1,10 +1,10 @@
 /**
- * Unified export orchestrator for DFEAL proposal documents.
+ * Unified export orchestrator for proposal documents.
  * Supports PDF and DOCX formats with consistent branding.
  */
 import { renderProposalPdf } from "@/lib/export/render-proposal-pdf";
 import { renderProposalDocx } from "@/lib/export/render-proposal-docx";
-import type { DocumentMeta } from "@/lib/export/dfeal-styles";
+import type { DocumentBranding, DocumentMeta } from "@/lib/export/document-styles";
 
 export type ExportFormat = "pdf" | "docx";
 
@@ -24,16 +24,17 @@ export async function exportProposal(
   content: string,
   meta: DocumentMeta,
   format: ExportFormat = "pdf",
+  branding: DocumentBranding,
 ): Promise<ExportResult> {
   let result: { buffer: Buffer; filename: string };
 
   switch (format) {
     case "docx":
-      result = await renderProposalDocx(content, meta);
+      result = await renderProposalDocx(content, meta, branding);
       break;
     case "pdf":
     default:
-      result = await renderProposalPdf(content, meta);
+      result = await renderProposalPdf(content, meta, branding);
       break;
   }
 

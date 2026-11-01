@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useAssistant } from "@/components/assistant/AssistantContext";
-import { TENANT } from "@/config/platform";
+import { useFirm } from "@/components/firm/FirmProvider";
 import { cn } from "@/shared/cn";
 
 export function Header({
@@ -14,6 +14,7 @@ export function Header({
   alertCount?: number;
   assistantOpen?: boolean;
 }) {
+  const firm = useFirm();
   const { openAssistant, closeAssistant, open: assistantPanelOpen } = useAssistant();
   const router = useRouter();
 
@@ -58,7 +59,7 @@ export function Header({
           <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gold/10 text-gold">
             ✦
           </span>
-          <span className="hidden md:inline">{TENANT.assistantName}</span>
+          <span className="hidden md:inline">{firm.assistantName}</span>
         </button>
         <LinkSignOut />
         {alertCount > 0 && (

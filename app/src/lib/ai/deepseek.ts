@@ -3,7 +3,6 @@
  * Configured via DEEPSEEK_API_KEY and DEEPSEEK_MODEL env vars.
  */
 import { getDeepseekApiKey, getDeepseekModel, getDeepseekBaseUrl } from "@/lib/env";
-import { buildDfealSystemPrompt } from "@/config/dfeal-profile";
 
 interface DeepseekMessage {
   role: "system" | "user" | "assistant";
@@ -20,6 +19,7 @@ interface DeepseekResponse {
 }
 
 export async function deepseekComplete(options: {
+  system: string;
   userPrompt: string;
   maxTokens?: number;
 }): Promise<string> {
@@ -28,7 +28,7 @@ export async function deepseekComplete(options: {
   const baseUrl = getDeepseekBaseUrl();
 
   const messages: DeepseekMessage[] = [
-    { role: "system", content: buildDfealSystemPrompt() },
+    { role: "system", content: options.system },
     { role: "user", content: options.userPrompt },
   ];
 
@@ -44,6 +44,7 @@ export async function deepseekComplete(options: {
       max_tokens: options.maxTokens ?? 4096,
       temperature: 0.3,
     }),
+    signal: AbortSignal.timeout(Number(process.env.LLM_TIMEOUT_MS ?? 90_000)),
   });
 
   if (!response.ok) {

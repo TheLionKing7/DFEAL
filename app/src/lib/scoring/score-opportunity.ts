@@ -1,9 +1,4 @@
-import {
-  DFEAL_PROFILE,
-  DFEAL_HOME_STATE,
-  getDfealNaicsCodes,
-  getDfealScoringCriteria,
-} from "@/config/dfeal-profile";
+import type { FirmProfile } from "@/lib/firms/types";
 import {
   classifyOpportunity,
   type OpportunityCategory,
@@ -35,21 +30,41 @@ function matchesSetAside(setAside: string | null, preferred: string[]): boolean 
   });
 }
 
-function isIllinoisOpportunity(opp: Opportunity): boolean {
-  if (opp.source === "bidbuy_il") return true;
-  const state = opp.place_of_performance?.state?.toUpperCase();
-  if (state === DFEAL_HOME_STATE) return true;
-  const agency = (opp.agency_name ?? "").toLowerCase();
-  return agency.includes("illinois") || /\bIL\b/.test(opp.title);
+/** State-specific sources always perform in their state. */
+const SOURCE_STATE: Record<string, string> = {
+  bidbuy_il: "IL",
+  stateuniv_il: "IL",
+  education_il: "IL",
+  georgia: "GA",
+  ohio: "OH",
+};
+
+const STATE_NAMES: Record<string, string> = {
+  IL: "illinois", GA: "georgia", OH: "ohio", DE: "delaware", MD: "maryland", VA: "virginia",
+  TX: "texas", CA: "california", NY: "new york", FL: "florida", PA: "pennsylvania", DC: "district of columbia",
+};
+
+export function opportunityState(opp: Opportunity): string | null {
+  const fromSource = SOURCE_STATE[opp.source];
+  if (fromSource) return fromSource;
+  const state = opp.place_of_performance?.state?.trim().toUpperCase();
+  return state && state.length === 2 ? state : null;
 }
 
-function scoreNaics(opp: Opportunity, dfealNaics: string[]): { points: number; reason: string } {
-  const primary = DFEAL_PROFILE.primaryNaics;
-  const secondary = new Set(DFEAL_PROFILE.secondaryNaics);
+function isInState(opp: Opportunity, state: string): boolean {
+  if (opportunityState(opp) === state) return true;
+  const name = STATE_NAMES[state];
+  return Boolean(name && (opp.agency_name ?? "").toLowerCase().includes(name));
+}
+
+function scoreNaics(opp: Opportunity, firm: FirmProfile): { points: number; reason: string } {
+  const primary = firm.primaryNaics;
+  const firmNaics = firm.naicsCodes;
+  const secondary = new Set(firmNaics.filter((c) => c !== primary));
 
   if (!opp.naics) {
-    if (opp.source === "bidbuy_il") {
-      return { points: 6, reason: "Illinois bid — NAICS not listed on bulletin" };
+    if (SOURCE_STATE[opp.source]) {
+      return { points: 6, reason: "State bid — NAICS not listed on bulletin" };
     }
     if (opp.source === "grants_gov" || opp.source === "sba") {
       return { points: 10, reason: "Grant opportunity — NAICS often not listed; verify eligibility" };
@@ -69,35 +84,29 @@ function scoreNaics(opp: Opportunity, dfealNaics: string[]): { points: number; r
   if (opp.naics.slice(0, 3) === primary.slice(0, 3)) {
     return { points: 12, reason: `NAICS ${opp.naics} same sector (3-digit)` };
   }
-  if (dfealNaics.some((n) => opp.naics!.slice(0, 2) === n.slice(0, 2))) {
+  if ([...secondary].some((n) => opp.naics!.slice(0, 4) === n.slice(0, 4))) {
+    return { points: 16, reason: `NAICS ${opp.naics} closely related to secondary code` };
+  }
+  if (firmNaics.some((n) => opp.naics!.slice(0, 2) === n.slice(0, 2))) {
     return { points: 6, reason: `NAICS ${opp.naics} weak sector overlap` };
   }
-  return { points: 0, reason: `NAICS ${opp.naics} outside DFEAL profile` };
+  return { points: 0, reason: `NAICS ${opp.naics} outside firm NAICS profile` };
 }
 
-function scoreCompetencyRelevance(opp: Opportunity): { points: number; reason: string } {
-  const text = `${opp.title} ${opp.description ?? ""}`.toLowerCase();
-  const terms = [
-    ...DFEAL_PROFILE.coreCompetencies,
-    "healthcare",
-    "clinical",
-    "research",
-    "procurement",
-    "program management",
-    "consulting",
-    "medical",
-    "it ",
-    "information technology",
-    "training",
-    "compliance",
-    "hipaa",
-    "fda",
-  ].map((t) => t.toLowerCase());
+function scoreCompetencyRelevance(
+  opp: Opportunity,
+  firm: FirmProfile,
+): { points: number; reason: string } {
+  const text = ` ${opp.title} ${opp.description ?? ""} `.toLowerCase();
+  const terms = [...new Set([...firm.keywords, ...firm.coreCompetencies].map((t) => t.toLowerCase().trim()))]
+    .filter((t) => t.length >= 2);
 
   let hits = 0;
   const matched: string[] = [];
   for (const term of terms) {
-    if (text.includes(term) && matched.length < 4) {
+    // Short terms (e.g. "it", "pmo") must match as whole words.
+    const hit = term.length <= 4 ? new RegExp(`\\b${term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`).test(text) : text.includes(term);
+    if (hit && matched.length < 4) {
       hits += 1;
       matched.push(term.slice(0, 30));
     }
@@ -105,7 +114,7 @@ function scoreCompetencyRelevance(opp: Opportunity): { points: number; reason: s
 
   const points = Math.min(22, hits * 5);
   if (points === 0) {
-    return { points: 0, reason: "Low keyword alignment with DFEAL competencies" };
+    return { points: 0, reason: "Low keyword alignment with firm competencies" };
   }
   return {
     points,
@@ -170,10 +179,9 @@ function scoreNoticeType(opp: Opportunity): { points: number; reason: string } {
   }
 }
 
-export function scoreOpportunity(opp: Opportunity): ScoreResult {
+export function scoreOpportunity(opp: Opportunity, firm: FirmProfile): ScoreResult {
   const classification = classifyOpportunity(opp);
-  const criteria = getDfealScoringCriteria();
-  const dfealNaics = getDfealNaicsCodes();
+  const criteria = firm.goNoGo;
   const reasons: string[] = [];
   let score = 0;
 
@@ -187,22 +195,28 @@ export function scoreOpportunity(opp: Opportunity): ScoreResult {
     };
   }
 
-  const naics = scoreNaics(opp, dfealNaics);
+  const naics = scoreNaics(opp, firm);
   score += naics.points;
   reasons.push(naics.reason);
 
-  const competency = scoreCompetencyRelevance(opp);
+  const competency = scoreCompetencyRelevance(opp, firm);
   score += competency.points;
   reasons.push(competency.reason);
 
-  if (isIllinoisOpportunity(opp)) {
+  if (firm.homeState && isInState(opp, firm.homeState)) {
     score += 14;
-    reasons.push(`Illinois home-state priority (${DFEAL_HOME_STATE})`);
+    reasons.push(`Home-state priority (${firm.homeState})`);
+  } else {
+    const target = firm.targetStates.find((s) => isInState(opp, s));
+    if (target) {
+      score += 6;
+      reasons.push(`Target state (${target})`);
+    }
   }
 
   if (opp.source === "grants_gov" || (opp.source === "sba" && opp.raw_data?.funding_type === "sba_grant_program")) {
     score += 8;
-    reasons.push("Federal grant lane — aligned to DFEAL research & program capabilities");
+    reasons.push("Federal grant lane — verify eligibility for your organization type");
   }
 
   if (opp.raw_data?.funding_type === "sba_grant_program") {
@@ -230,6 +244,22 @@ export function scoreOpportunity(opp: Opportunity): ScoreResult {
   const notice = scoreNoticeType(opp);
   score += notice.points;
   reasons.push(notice.reason);
+
+  if (criteria.excludedAgencies.length > 0 && opp.agency_name) {
+    const agencyLower = opp.agency_name.toLowerCase();
+    if (criteria.excludedAgencies.some((a) => agencyLower.includes(a.toLowerCase()))) {
+      score -= 30;
+      reasons.push("Excluded agency");
+    }
+  }
+
+  if (
+    opp.set_aside &&
+    criteria.excludedSetAsides.some((x) => opp.set_aside!.toLowerCase().includes(x.toLowerCase()))
+  ) {
+    score -= 20;
+    reasons.push(`Set-aside "${opp.set_aside}" excluded by firm rules`);
+  }
 
   if (criteria.priorityAgencies.length > 0 && opp.agency_name) {
     const agencyLower = opp.agency_name.toLowerCase();

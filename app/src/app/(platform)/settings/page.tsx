@@ -1,57 +1,60 @@
-import { DFEAL_PROFILE, getDfealNaicsCodes } from "@/config/dfeal-profile";
-import { hasAnthropicApiKey, hasGroqApiKey } from "@/lib/env";
-import { isDatabaseConfigured } from "@/lib/db/supabase-admin";
+import { FirmForm, firmToForm } from "@/components/firm/FirmForm";
+import { FirmSwitcher } from "@/components/firm/FirmSwitcher";
+import { TeamPanel } from "@/components/firm/TeamPanel";
+import { PageHeader, PageShell, Panel } from "@/components/layout/PageShell";
+import { hasDeepseekApiKey, hasAnthropicApiKey, hasGroqApiKey } from "@/lib/env";
+import { hasRole, requireFirmPage } from "@/lib/firms/context";
+import { getFirmById, listFirmMembers } from "@/lib/firms/repository";
 import { listConnectorStatus } from "@/lib/sled/registry";
 
-export default function SettingsPage() {
-  const naics = getDfealNaicsCodes();
+export const dynamic = "force-dynamic";
+
+export default async function SettingsPage() {
+  const ctx = await requireFirmPage();
+  const canEdit = hasRole(ctx, "admin");
+  const [members, otherFirms] = await Promise.all([
+    listFirmMembers(ctx.firm.id),
+    Promise.all(ctx.memberships.map((m) => getFirmById(m.firmId))),
+  ]);
+  const switchable = otherFirms
+    .filter((f): f is NonNullable<typeof f> => Boolean(f))
+    .map((f) => ({ id: f.id, name: f.legalName }));
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Settings</h1>
-        <p className="mt-2 text-text-muted">DFEAL company profile and platform status.</p>
-      </div>
+    <PageShell className="max-w-4xl">
+      <PageHeader
+        title="Firm profile & settings"
+        description={
+          canEdit
+            ? `Manage ${ctx.firm.legalName}'s NAICS codes, industry, scoring rules, and team. Saving re-scores the opportunity feed.`
+            : `${ctx.firm.legalName}'s capture profile. Ask a firm admin to make changes.`
+        }
+      />
 
-      <section className="rounded-xl border border-border bg-bg-surface p-6 text-sm">
-        <h2 className="font-semibold">Company profile</h2>
-        <dl className="mt-4 grid gap-3 sm:grid-cols-2">
-          <div>
-            <dt className="text-xs uppercase text-text-muted">Legal name</dt>
-            <dd>{DFEAL_PROFILE.legalName}</dd>
-          </div>
-          <div>
-            <dt className="text-xs uppercase text-text-muted">UEI / CAGE</dt>
-            <dd>
-              {DFEAL_PROFILE.uei} / {DFEAL_PROFILE.cage}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-xs uppercase text-text-muted">Primary NAICS</dt>
-            <dd>{DFEAL_PROFILE.primaryNaics}</dd>
-          </div>
-          <div>
-            <dt className="text-xs uppercase text-text-muted">Team contact</dt>
-            <dd>{DFEAL_PROFILE.teamContactEmail}</dd>
-          </div>
-        </dl>
-        <p className="mt-4 text-xs text-text-muted">
-          All NAICS: {naics.join(", ")}
-        </p>
-      </section>
+      <FirmForm mode="edit" initial={firmToForm(ctx.firm)} readOnly={!canEdit} />
 
-      <section className="rounded-xl border border-border bg-bg-surface p-6 text-sm">
-        <h2 className="font-semibold">Platform status</h2>
-        <ul className="mt-4 space-y-2">
-          <StatusRow label="Supabase database" ok={isDatabaseConfigured()} />
-          <StatusRow label="Claude (Anthropic)" ok={hasAnthropicApiKey()} />
-          <StatusRow label="Groq fallback" ok={hasGroqApiKey()} />
+      <Panel title="Team">
+        <TeamPanel
+          initialMembers={members}
+          canManage={canEdit}
+          currentEmail={ctx.user.email}
+        />
+      </Panel>
+
+      {switchable.length > 1 && (
+        <Panel title="Your firms">
+          <FirmSwitcher firms={switchable} activeId={ctx.firm.id} />
+        </Panel>
+      )}
+
+      <Panel title="Platform status">
+        <ul className="space-y-2 text-sm">
+          <StatusRow label="DeepSeek (primary LLM)" ok={hasDeepseekApiKey()} />
+          <StatusRow label="Groq (fallback)" ok={hasGroqApiKey()} />
+          <StatusRow label="Claude (fallback)" ok={hasAnthropicApiKey()} />
         </ul>
-      </section>
-
-      <section className="rounded-xl border border-border bg-bg-surface p-6 text-sm">
-        <h2 className="font-semibold">Phase 3 — SLED connectors</h2>
-        <ul className="mt-4 space-y-3">
+        <h3 className="mt-6 text-xs font-semibold uppercase tracking-wide text-text-muted">SLED connectors</h3>
+        <ul className="mt-3 space-y-3 text-sm">
           {listConnectorStatus().map((c) => (
             <li key={c.id} className="flex items-start justify-between gap-4">
               <div>
@@ -72,8 +75,8 @@ export default function SettingsPage() {
             </li>
           ))}
         </ul>
-      </section>
-    </div>
+      </Panel>
+    </PageShell>
   );
 }
 
@@ -81,9 +84,7 @@ function StatusRow({ label, ok }: { label: string; ok: boolean }) {
   return (
     <li className="flex items-center justify-between">
       <span>{label}</span>
-      <span className={ok ? "text-success" : "text-text-muted"}>
-        {ok ? "Configured" : "Not configured"}
-      </span>
+      <span className={ok ? "text-success" : "text-text-muted"}>{ok ? "Configured" : "Not configured"}</span>
     </li>
   );
 }

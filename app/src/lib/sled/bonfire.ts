@@ -1,6 +1,6 @@
 import { warmCookieJar, sledFetch } from "@/lib/sled/http";
 import {
-  matchesDfealSledKeywords,
+  matchesSledKeywords,
   parseSledDate,
   sledOpportunityId,
 } from "@/lib/sled/normalize";
@@ -130,7 +130,7 @@ async function fetchBonfirePortal(
   const departments = data.payload?.departments ?? {};
 
   const opportunities = projects
-    .filter((p) => matchesDfealSledKeywords(p.ProjectName))
+    .filter((p) => matchesSledKeywords(p.ProjectName))
     .slice(0, limit)
     .map((p) =>
       normalizeBonfireProject(

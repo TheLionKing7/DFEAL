@@ -2,22 +2,23 @@
 
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { DFEAL_PROFILE } from "@/config/dfeal-profile";
-import { SMART_CAPTURE, TENANT } from "@/config/platform";
-import { getAllowedEmailDomain, isAllowedTeamEmail } from "@/lib/auth/team-access";
+import { SMART_CAPTURE } from "@/config/platform";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type Mode = "magic" | "password";
 
 export default function LoginForm() {
   const searchParams = useSearchParams();
-  const next = searchParams.get("next") || "/explore";
-  const allowedDomain = getAllowedEmailDomain();
+  const rawNext = searchParams.get("next") || "/explore";
+  const next = rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/explore";
+  const callbackError = searchParams.get("error");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [mode, setMode] = useState<Mode>("magic");
   const [message, setMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(
+    callbackError ? "That sign-in link is invalid or expired. Request a new one." : null,
+  );
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(event: React.FormEvent) {
@@ -25,24 +26,19 @@ export default function LoginForm() {
     setError(null);
     setMessage(null);
 
-    if (!isAllowedTeamEmail(email)) {
-      setError(`Use your @${allowedDomain} work email.`);
-      return;
-    }
-
     setLoading(true);
-    const supabase = createSupabaseBrowserClient();
-
     try {
       if (mode === "magic") {
-        const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`;
-        const { error: otpError } = await supabase.auth.signInWithOtp({
-          email: email.trim(),
-          options: { emailRedirectTo: redirectTo },
+        const res = await fetch("/api/auth/magic-link", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: email.trim(), next }),
         });
-        if (otpError) throw otpError;
-        setMessage("Check your inbox for a sign-in link.");
+        const data = (await res.json()) as { message?: string; error?: string };
+        if (!res.ok) throw new Error(data.error ?? "Could not send sign-in link");
+        setMessage(data.message ?? "Check your inbox for a sign-in link.");
       } else {
+        const supabase = createSupabaseBrowserClient();
         const { error: signInError } = await supabase.auth.signInWithPassword({
           email: email.trim(),
           password,
@@ -65,9 +61,8 @@ export default function LoginForm() {
         </p>
         <h1 className="mt-2 text-2xl font-bold">{SMART_CAPTURE.name}</h1>
         <p className="mt-1 text-xs text-text-muted">{SMART_CAPTURE.tagline}</p>
-        <p className="mt-2 text-sm font-medium text-gold">{TENANT.legalName}</p>
         <p className="mt-2 text-sm text-text-muted">
-          Sign in with your @{TENANT.shortName.toLowerCase()} team email.
+          Sign in with the work email your firm registered with Smart Capture.
         </p>
 
         <div className="mt-6 flex rounded-lg border border-border p-1 text-sm">
@@ -96,7 +91,7 @@ export default function LoginForm() {
               autoComplete="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
-              placeholder={`you@${allowedDomain}`}
+              placeholder="you@yourfirm.com"
               className="mt-1 w-full rounded-lg border border-border px-3 py-2 outline-none focus:border-gold"
             />
           </label>
@@ -140,8 +135,8 @@ export default function LoginForm() {
         </form>
 
         <p className="mt-6 text-xs text-text-muted">
-          Accounts are limited to @{allowedDomain}. Ask an admin to create your
-          user in Supabase if you do not have access yet.
+          Access is managed per firm. If you do not receive a link, ask your firm
+          administrator to add you under Firm profile → Team.
         </p>
       </div>
     </div>

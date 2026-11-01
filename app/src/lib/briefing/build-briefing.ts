@@ -1,6 +1,7 @@
 import { listHotOpportunities } from "@/lib/db/opportunities";
 import { getSupabaseAdmin, isDatabaseConfigured } from "@/lib/db/supabase-admin";
 import { scoreOpportunity } from "@/lib/scoring/score-opportunity";
+import type { FirmProfile } from "@/lib/firms/types";
 
 export interface BriefingEntry {
   id: string;
@@ -20,7 +21,7 @@ export interface DailyBriefingData {
   entries: BriefingEntry[];
 }
 
-export async function buildDailyBriefing(): Promise<DailyBriefingData> {
+export async function buildDailyBriefing(firm: FirmProfile): Promise<DailyBriefingData> {
   const now = new Date();
   const generatedAt = now.toISOString();
 
@@ -36,7 +37,7 @@ export async function buildDailyBriefing(): Promise<DailyBriefingData> {
   }
 
   const supabase = getSupabaseAdmin();
-  const hot = await listHotOpportunities(12);
+  const hot = await listHotOpportunities(firm.id, 12);
 
   const weekEnd = new Date(now);
   weekEnd.setDate(weekEnd.getDate() + 7);
@@ -56,7 +57,7 @@ export async function buildDailyBriefing(): Promise<DailyBriefingData> {
     id: "pulse-today",
     timestamp: generatedAt,
     headline: "Industry pulse",
-    body: `Federal and SLED markets active for DFEAL. ${hot.length} hot opportunities scored ≥60 with go/review status. Prioritize Illinois home-state and 8(a) set-asides per your capture profile.`,
+    body: `Federal and SLED markets active for ${firm.shortName}. ${hot.length} hot opportunities scored ≥60 with go/review status.${firm.homeState ? ` Home-state (${firm.homeState}) bids get priority` : ""}${firm.goNoGo.preferredSetAsides.length ? `; preferred set-asides: ${firm.goNoGo.preferredSetAsides.join(", ")}` : ""}.`,
     category: "market",
     actions: [
       { label: "Explore hot feed", href: "/explore" },
@@ -69,12 +70,12 @@ export async function buildDailyBriefing(): Promise<DailyBriefingData> {
       id: `hot-${opp.id}`,
       timestamp: generatedAt,
       headline: opp.title,
-      body: `${opp.agency_name ?? "Agency TBD"} · Fit ${opp.fit_score ?? scoreOpportunity(opp).fit_score}% · ${opp.go_no_go?.replace("_", " ") ?? "review"}. ${opp.score_rationale ?? "Strong alignment with DFEAL NAICS and certifications."}`,
+      body: `${opp.agency_name ?? "Agency TBD"} · Fit ${opp.fit_score ?? scoreOpportunity(opp, firm).fit_score}% · ${opp.go_no_go?.replace("_", " ") ?? "review"}. ${opp.score_rationale ?? `Strong alignment with ${firm.shortName} NAICS and certifications.`}`,
       category: "hot",
       opportunity_id: opp.id,
       actions: [
         { label: "Open workspace", href: `/opportunities/${opp.id}` },
-        { label: "Analyze in chat", href: `/explore?ask=${encodeURIComponent(`Analyze ${opp.title} for DFEAL pursuit fit`)}` },
+        { label: "Analyze in chat", href: `/explore?ask=${encodeURIComponent(`Analyze ${opp.title} for ${firm.shortName} pursuit fit`)}` },
       ],
     });
   }

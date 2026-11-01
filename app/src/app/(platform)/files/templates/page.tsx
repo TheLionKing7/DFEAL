@@ -38,7 +38,7 @@ export default function TemplatesPage() {
     <PageShell>
       <PageHeader
         title="Proposal templates"
-        description="DFEAL document structures used by the AI generator. Each draft follows these outlines with live company profile data."
+        description="Document structures used by the AI generator. Each draft follows these outlines with live company profile data."
       />
 
       {loading && <p className="text-sm text-text-muted">Loading templates…</p>}

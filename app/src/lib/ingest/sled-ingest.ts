@@ -1,5 +1,7 @@
 import { upsertOpportunities, updateIngestCursor } from "@/lib/db/opportunities";
 import { getSledConnector, SLED_CONNECTORS } from "@/lib/sled/registry";
+import { setSledKeywordFilter } from "@/lib/sled/normalize";
+import { loadIngestProfile } from "@/lib/firms/ingest-profile";
 import type { SledSource } from "@/lib/sled/types";
 import type { Opportunity } from "@/shared/types/opportunity";
 
@@ -54,7 +56,10 @@ async function ingestOneSource(source: SledSource, daysBack = 30): Promise<{
 export async function ingestSledOpportunities(options?: {
   sources?: SledSource[];
   daysBack?: number;
+  /** Union of firm keywords; loaded from the DB when omitted. */
+  keywords?: string[];
 }): Promise<SledIngestResult> {
+  setSledKeywordFilter(options?.keywords ?? (await loadIngestProfile()).keywords);
   const sources = options?.sources ?? (["bidbuy_il", "georgia"] as SledSource[]);
   const daysBack = options?.daysBack ?? 30;
   const out: SledIngestResult = {
@@ -78,7 +83,10 @@ export async function ingestSledOpportunities(options?: {
   return out;
 }
 
-export async function ingestAllEnabledSled(daysBack = 30): Promise<SledIngestResult> {
+export async function ingestAllEnabledSled(
+  daysBack = 30,
+  keywords?: string[],
+): Promise<SledIngestResult> {
   if (process.env.SLED_INGEST_ENABLED?.trim() === "0") {
     return { sources: {}, total_fetched: 0, total_upserted: 0 };
   }
@@ -86,7 +94,7 @@ export async function ingestAllEnabledSled(daysBack = 30): Promise<SledIngestRes
   const enabled = SLED_CONNECTORS.filter((c) => c.meta.status === "live").map(
     (c) => c.meta.id,
   );
-  return ingestSledOpportunities({ sources: enabled, daysBack });
+  return ingestSledOpportunities({ sources: enabled, daysBack, keywords });
 }
 
 export function mergeSledOpportunities(batches: Opportunity[][]): Opportunity[] {

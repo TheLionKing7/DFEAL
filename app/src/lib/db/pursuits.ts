@@ -16,11 +16,12 @@ export interface PursuitItem {
   go_no_go?: string | null;
 }
 
-export async function listPursuits(userEmail: string): Promise<PursuitItem[]> {
+export async function listPursuits(firmId: string, userEmail: string): Promise<PursuitItem[]> {
   const supabase = getSupabaseAdmin();
   const { data: pursuits, error } = await supabase
     .from("watchlists")
     .select("*")
+    .eq("firm_id", firmId)
     .eq("user_email", userEmail)
     .order("updated_at", { ascending: false });
 
@@ -34,8 +35,8 @@ export async function listPursuits(userEmail: string): Promise<PursuitItem[]> {
     supabase
       .from("opportunity_scores")
       .select("opportunity_id, fit_score, go_no_go, scored_at")
-      .in("opportunity_id", ids)
-      .order("scored_at", { ascending: false }),
+      .eq("firm_id", firmId)
+      .in("opportunity_id", ids),
   ]);
 
   const oppMap = new Map((opps ?? []).map((o) => [o.id, o]));
@@ -69,11 +70,12 @@ export async function listPursuits(userEmail: string): Promise<PursuitItem[]> {
   });
 }
 
-export async function getPursuit(userEmail: string, opportunityId: string) {
+export async function getPursuit(firmId: string, userEmail: string, opportunityId: string) {
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase
     .from("watchlists")
     .select("*")
+    .eq("firm_id", firmId)
     .eq("user_email", userEmail)
     .eq("opportunity_id", opportunityId)
     .maybeSingle();
@@ -83,6 +85,7 @@ export async function getPursuit(userEmail: string, opportunityId: string) {
 }
 
 export async function addPursuit(
+  firmId: string,
   userEmail: string,
   opportunityId: string,
   notes?: string,
@@ -92,13 +95,14 @@ export async function addPursuit(
     .from("watchlists")
     .upsert(
       {
+        firm_id: firmId,
         user_email: userEmail,
         opportunity_id: opportunityId,
         notes: notes ?? null,
         pursuit_stage: "tracking",
         updated_at: new Date().toISOString(),
       },
-      { onConflict: "user_email,opportunity_id" },
+      { onConflict: "firm_id,user_email,opportunity_id" },
     )
     .select("*")
     .single();
@@ -108,6 +112,7 @@ export async function addPursuit(
 }
 
 export async function updatePursuit(
+  firmId: string,
   userEmail: string,
   opportunityId: string,
   patch: { notes?: string; pursuit_stage?: PursuitStage },
@@ -116,6 +121,7 @@ export async function updatePursuit(
   const { data, error } = await supabase
     .from("watchlists")
     .update({ ...patch, updated_at: new Date().toISOString() })
+    .eq("firm_id", firmId)
     .eq("user_email", userEmail)
     .eq("opportunity_id", opportunityId)
     .select("*")
@@ -125,22 +131,24 @@ export async function updatePursuit(
   return data;
 }
 
-export async function removePursuit(userEmail: string, opportunityId: string) {
+export async function removePursuit(firmId: string, userEmail: string, opportunityId: string) {
   const supabase = getSupabaseAdmin();
   const { error } = await supabase
     .from("watchlists")
     .delete()
+    .eq("firm_id", firmId)
     .eq("user_email", userEmail)
     .eq("opportunity_id", opportunityId);
 
   if (error) throw new Error(error.message);
 }
 
-export async function countPursuits(userEmail: string): Promise<number> {
+export async function countPursuits(firmId: string, userEmail: string): Promise<number> {
   const supabase = getSupabaseAdmin();
   const { count, error } = await supabase
     .from("watchlists")
     .select("*", { count: "exact", head: true })
+    .eq("firm_id", firmId)
     .eq("user_email", userEmail);
 
   if (error) throw new Error(error.message);

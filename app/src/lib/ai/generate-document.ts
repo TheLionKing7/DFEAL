@@ -1,4 +1,5 @@
-import { buildDfealSystemPrompt, DFEAL_PROFILE } from "@/config/dfeal-profile";
+import { buildFirmSystemPrompt } from "@/lib/firms/prompt";
+import type { FirmProfile } from "@/lib/firms/types";
 import { llmComplete } from "@/lib/ai/complete";
 import { saveDocument } from "@/lib/db/documents";
 import { getFilledTemplate } from "@/lib/documents/template-loader";
@@ -14,12 +15,14 @@ const MAX_TOKENS: Record<DocumentType, number> = {
   cta_proposal: 4500,
 };
 
-const DRAFTING_RULES = [
-  "Write as a senior federal proposal specialist for DFEAL LLC — human, precise, compliance-aware, persuasive.",
+function draftingRules(firm: FirmProfile) {
+  const name = firm.shortName;
+  return [
+  `Write as a senior federal proposal specialist for ${firm.legalName} — human, precise, compliance-aware, persuasive.`,
   "Follow the TEMPLATE STRUCTURE exactly: use the same section headings and order.",
-  "Populate EVERY section with REAL DFEAL company data from the profile — never use placeholders, brackets, or [Insert ...] text.",
+  `Populate EVERY section with REAL ${name} company data from the profile — never use placeholders, brackets, or [Insert ...] text. If a fact is not in the profile, omit it rather than inventing it.`,
   "Tailor win themes, technical approach, and past performance to this specific opportunity and agency mission.",
-  "Mirror the tone, depth, and structure of DFEAL's real client-facing documents (capability statements, RFI responses, sources-sought responses, and proposals).",
+  "Mirror the tone, depth, and structure of professional federal capability statements, RFI responses, sources-sought responses, and proposals.",
   "",
   "OUTPUT FORMAT — write clean, submission-ready prose. Only these structures are allowed:",
   "- Use `# Document Title` once, as the very first line",
@@ -40,20 +43,22 @@ const DRAFTING_RULES = [
   "- For Contract Proposal: follow Volumes I-IV structure with technical depth",
   "- For RFI Response: directly answer each implied question from the solicitation",
   "- For Sources Sought: emphasize capability, past performance, and socioeconomic status",
-  "- For CTA Proposal: clearly define DFEAL's proposed role and contribution to the team",
-  "- Reference specific DFEAL past performance contracts by name and agency",
+  `- For CTA Proposal: clearly define ${name}'s proposed role and contribution to the team`,
+  `- Reference specific ${name} past performance contracts by name and agency (only those listed in the profile)`,
   "- Show deep understanding of the agency's mission and procurement objectives",
   "- Include UEI, CAGE, NAICS, certifications, and contact block where the template specifies",
-].join("\n");
+  ].join("\n");
+}
 
 export async function generateProposalDocument(input: {
   opp: Opportunity;
+  firm: FirmProfile;
   documentType: DocumentType;
   userEmail: string;
   analysisSummary?: string;
 }) {
-  const { opp, documentType, userEmail, analysisSummary } = input;
-  const templateOutline = getFilledTemplate(documentType, opp);
+  const { opp, firm, documentType, userEmail, analysisSummary } = input;
+  const templateOutline = getFilledTemplate(documentType, opp, firm);
   const label = getDocumentTypeLabel(documentType);
 
   // Build a structured context block from opportunity data
@@ -64,7 +69,7 @@ export async function generateProposalDocument(input: {
     `Agency: ${opp.agency_name ?? "TBD"}`,
     `Notice #: ${opp.external_id}`,
     `Notice type: ${opp.notice_type}`,
-    `NAICS: ${opp.naics ?? DFEAL_PROFILE.primaryNaics}`,
+    `NAICS: ${opp.naics ?? firm.primaryNaics}`,
     `PSC: ${opp.psc ?? "N/A"}`,
     `Set-aside: ${opp.set_aside ?? "Unrestricted"}`,
     `Est. value: ${opp.estimated_value_usd ? `$${opp.estimated_value_usd.toLocaleString()}` : "Not specified"}`,
@@ -89,7 +94,7 @@ export async function generateProposalDocument(input: {
     .join("\n");
 
   const userPrompt = [
-    `Draft a complete, submission-ready ${label} for ${DFEAL_PROFILE.legalName}.`,
+    `Draft a complete, submission-ready ${label} for ${firm.legalName}.`,
     "",
     "=== TEMPLATE STRUCTURE (follow this outline and maintain these headings) ===",
     templateOutline,
@@ -97,7 +102,7 @@ export async function generateProposalDocument(input: {
     oppContext,
     "",
     "=== DRAFTING RULES ===",
-    DRAFTING_RULES,
+    draftingRules(firm),
     "",
     `Produce the full ${label} now. Begin directly with the document title.`,
   ]
@@ -105,7 +110,8 @@ export async function generateProposalDocument(input: {
     .join("\n");
 
   const { text, provider } = await llmComplete({
-    userPrompt: `${buildDfealSystemPrompt()}\n\n${userPrompt}`,
+    system: buildFirmSystemPrompt(firm),
+    userPrompt,
     maxTokens: MAX_TOKENS[documentType],
   });
 
@@ -116,6 +122,7 @@ export async function generateProposalDocument(input: {
   const title = `${label} — ${opp.title.slice(0, 80)}`;
 
   const doc = await saveDocument({
+    firm_id: firm.id,
     opportunity_id: opp.id,
     document_type: documentType,
     title,

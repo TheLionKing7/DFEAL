@@ -2,6 +2,7 @@ import { PageHeader, PageShell, Panel } from "@/components/layout/PageShell";
 import { OpportunityCard } from "@/components/opportunity/OpportunityCard";
 import type { OpportunityCardData } from "@/components/opportunity/OpportunityCard";
 import { listHotOpportunities, listOpportunities } from "@/lib/db/opportunities";
+import { requireFirmPage } from "@/lib/firms/context";
 import { listFederalGrantConnectorStatus } from "@/lib/grants/registry";
 import { listConnectorStatus, laneToGrantSources, laneToSledSources } from "@/lib/sled/registry";
 import {
@@ -18,6 +19,7 @@ export default async function OpportunitiesPage({
   searchParams: Promise<{ lane?: string; q?: string }>;
 }) {
   const params = await searchParams;
+  const { firm } = await requireFirmPage();
   const lane = (params.lane ?? "federal") as OpportunityLaneId;
   const q = params.q?.trim();
   const laneMeta = OPPORTUNITY_LANES.find((l) => l.id === lane);
@@ -28,7 +30,7 @@ export default async function OpportunitiesPage({
 
   try {
     if (lane === "federal" && !q) {
-      const hot = await listHotOpportunities(50);
+      const hot = await listHotOpportunities(firm.id, 50);
       if (hot.length > 0) {
         items = hot;
       } else {

@@ -46,6 +46,7 @@ function tableMissingError(error: { message?: string; code?: string }) {
 }
 
 export async function listUserOpportunityList(
+  firmId: string,
   userEmail: string,
   listType: OpportunityListType,
 ): Promise<UserListItem[]> {
@@ -53,6 +54,7 @@ export async function listUserOpportunityList(
   const { data, error } = await supabase
     .from("user_opportunity_lists")
     .select("*")
+    .eq("firm_id", firmId)
     .eq("user_email", userEmail)
     .eq("list_type", listType)
     .order("created_at", { ascending: false });
@@ -72,8 +74,8 @@ export async function listUserOpportunityList(
   const { data: scores } = await supabase
     .from("opportunity_scores")
     .select("opportunity_id, fit_score, scored_at")
-    .in("opportunity_id", ids)
-    .order("scored_at", { ascending: false });
+    .eq("firm_id", firmId)
+    .in("opportunity_id", ids);
 
   const oppMap = new Map((opps ?? []).map((o) => [o.id, o]));
   const scoreMap = new Map<string, number>();
@@ -97,6 +99,7 @@ export async function listUserOpportunityList(
 }
 
 export async function addToUserList(
+  firmId: string,
   userEmail: string,
   opportunityId: string,
   listType: OpportunityListType,
@@ -105,8 +108,9 @@ export async function addToUserList(
   const { data, error } = await supabase
     .from("user_opportunity_lists")
     .upsert(
-      { user_email: userEmail, opportunity_id: opportunityId, list_type: listType },
-      { onConflict: "user_email,opportunity_id,list_type" },
+      { firm_id: firmId,
+        user_email: userEmail, opportunity_id: opportunityId, list_type: listType },
+      { onConflict: "firm_id,user_email,opportunity_id,list_type" },
     )
     .select("*")
     .single();
@@ -116,6 +120,7 @@ export async function addToUserList(
 }
 
 export async function removeFromUserList(
+  firmId: string,
   userEmail: string,
   opportunityId: string,
   listType: OpportunityListType,
@@ -124,6 +129,7 @@ export async function removeFromUserList(
   const { error } = await supabase
     .from("user_opportunity_lists")
     .delete()
+    .eq("firm_id", firmId)
     .eq("user_email", userEmail)
     .eq("opportunity_id", opportunityId)
     .eq("list_type", listType);
@@ -131,11 +137,12 @@ export async function removeFromUserList(
   if (error) throw new Error(error.message);
 }
 
-export async function getAssistantSettings(userEmail: string): Promise<AssistantSettings> {
+export async function getAssistantSettings(firmId: string, userEmail: string): Promise<AssistantSettings> {
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase
     .from("user_assistant_settings")
     .select("*")
+    .eq("firm_id", firmId)
     .eq("user_email", userEmail)
     .maybeSingle();
 
@@ -150,31 +157,34 @@ export async function getAssistantSettings(userEmail: string): Promise<Assistant
 }
 
 export async function saveAssistantSettings(
+  firmId: string,
   userEmail: string,
   patch: Partial<AssistantSettings>,
 ) {
   const supabase = getSupabaseAdmin();
-  const existing = await getAssistantSettings(userEmail);
+  const existing = await getAssistantSettings(firmId, userEmail);
   const { error } = await supabase.from("user_assistant_settings").upsert(
     {
-      user_email: userEmail,
+      firm_id: firmId,
+        user_email: userEmail,
       custom_instructions: patch.custom_instructions ?? existing.custom_instructions,
       personalization: (patch.personalization ?? existing.personalization) as Json,
       memories: (patch.memories ?? existing.memories) as Json,
       connector_prefs: (patch.connector_prefs ?? existing.connector_prefs) as Json,
       updated_at: new Date().toISOString(),
     },
-    { onConflict: "user_email" },
+    { onConflict: "firm_id,user_email" },
   );
 
   if (error) throw new Error(error.message);
 }
 
-export async function listAutomations(userEmail: string): Promise<UserAutomation[]> {
+export async function listAutomations(firmId: string, userEmail: string): Promise<UserAutomation[]> {
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase
     .from("user_automations")
     .select("*")
+    .eq("firm_id", firmId)
     .eq("user_email", userEmail)
     .order("updated_at", { ascending: false });
 
@@ -195,6 +205,7 @@ export async function listAutomations(userEmail: string): Promise<UserAutomation
 }
 
 export async function upsertAutomation(
+  firmId: string,
   userEmail: string,
   automation: Partial<UserAutomation> & { name: string },
 ) {
@@ -210,7 +221,8 @@ export async function upsertAutomation(
         config: (automation.config ?? {}) as Json,
         updated_at: new Date().toISOString(),
       })
-      .eq("user_email", userEmail)
+      .eq("firm_id", firmId)
+    .eq("user_email", userEmail)
       .eq("id", automation.id)
       .select("*")
       .single();
@@ -222,7 +234,8 @@ export async function upsertAutomation(
   const { data, error } = await supabase
     .from("user_automations")
     .insert({
-      user_email: userEmail,
+      firm_id: firmId,
+        user_email: userEmail,
       name: automation.name,
       enabled: automation.enabled ?? true,
       description: automation.description ?? null,
@@ -236,18 +249,19 @@ export async function upsertAutomation(
   return data;
 }
 
-export async function deleteAutomation(userEmail: string, id: string) {
+export async function deleteAutomation(firmId: string, userEmail: string, id: string) {
   const supabase = getSupabaseAdmin();
   const { error } = await supabase
     .from("user_automations")
     .delete()
+    .eq("firm_id", firmId)
     .eq("user_email", userEmail)
     .eq("id", id);
 
   if (error) throw new Error(error.message);
 }
 
-export async function getFavoriteOpportunityIds(userEmail: string): Promise<string[]> {
-  const items = await listUserOpportunityList(userEmail, "favorite");
+export async function getFavoriteOpportunityIds(firmId: string, userEmail: string): Promise<string[]> {
+  const items = await listUserOpportunityList(firmId, userEmail, "favorite");
   return items.map((i) => i.opportunity_id);
 }

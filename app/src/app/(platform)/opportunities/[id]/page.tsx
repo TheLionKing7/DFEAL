@@ -5,7 +5,7 @@ import { listComplianceRuns } from "@/lib/db/compliance";
 import { listDocuments } from "@/lib/db/documents";
 import { getOpportunityById } from "@/lib/db/opportunities";
 import { getPursuit } from "@/lib/db/pursuits";
-import { getSessionUser } from "@/lib/supabase/server";
+import { requireFirmPage } from "@/lib/firms/context";
 import type { PursuitStage } from "@/shared/opportunity-lanes";
 
 export const dynamic = "force-dynamic";
@@ -16,16 +16,16 @@ export default async function OpportunityDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const user = await getSessionUser();
+  const { firm, user } = await requireFirmPage();
   const opp = await getOpportunityById(id);
   if (!opp) notFound();
 
   const [score, analyses, documents, complianceRuns, pursuit] = await Promise.all([
-    getLatestScore(id),
-    listAnalysisRuns(id, 3),
-    listDocuments({ opportunityId: id, limit: 20 }),
-    listComplianceRuns(id, 3),
-    user?.email ? getPursuit(user.email, id) : Promise.resolve(null),
+    getLatestScore(firm.id, id),
+    listAnalysisRuns(firm.id, id, 3),
+    listDocuments({ firmId: firm.id, opportunityId: id, limit: 20 }),
+    listComplianceRuns(firm.id, id, 3),
+    getPursuit(firm.id, user.email, id),
   ]);
 
   const overviewRun = analyses.find(
@@ -53,7 +53,11 @@ export default async function OpportunityDetailPage({
               String,
             )
           : [],
-        dfeal_fit: String((overviewRun.result_json as Record<string, unknown>).dfeal_fit ?? ""),
+        firm_fit: String(
+          (overviewRun.result_json as Record<string, unknown>).firm_fit ??
+            (overviewRun.result_json as Record<string, unknown>).dfeal_fit ??
+            "",
+        ),
         recommended_next_steps: Array.isArray(
           (overviewRun.result_json as Record<string, unknown>).recommended_next_steps,
         )

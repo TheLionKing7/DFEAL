@@ -20,3 +20,7 @@ _extract_log.txt
 
 # TypeScript
 *.tsbuildinfo
+
+# Local handoff / tooling
+.handoff/
+coverage/

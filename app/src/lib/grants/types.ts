@@ -14,6 +14,8 @@ export interface FederalGrantConnectorMeta {
 export interface FederalGrantFetchOptions {
   since?: Date;
   keyword?: string;
+  /** Capability keywords (union across firms) used to widen keyword searches. */
+  keywords?: string[];
   limit?: number;
 }
 

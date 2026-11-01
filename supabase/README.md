@@ -1,4 +1,4 @@
-# Supabase setup — DFEAL Capture
+# Supabase setup — Smart Capture
 
 ## 1. Run the schema
 
@@ -6,8 +6,10 @@
 
 1. Open [Supabase Dashboard](https://supabase.com/dashboard) → your project
 2. Go to **SQL Editor** → **New query**
-3. Paste the full contents of `migrations/20250607000000_initial_schema.sql`
-4. Click **Run**
+3. Run **every** file in `migrations/` in filename order (the last one,
+   `20261031000000_multi_tenant_firms.sql`, enables multi-tenant firms and
+   seeds/backfills DFEAL as the first firm)
+4. Click **Run** for each
 
 **Option B — Supabase CLI**
 

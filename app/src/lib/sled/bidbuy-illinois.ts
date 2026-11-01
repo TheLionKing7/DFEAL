@@ -1,6 +1,6 @@
 import * as cheerio from "cheerio";
 import {
-  matchesDfealSledKeywords,
+  matchesSledKeywords,
   parseIllinoisBidDate,
   sledOpportunityId,
 } from "@/lib/sled/normalize";
@@ -83,7 +83,7 @@ function isActiveIllinoisBid(row: BidBuyRow): boolean {
 
   const desc = row.description.toLowerCase();
   if (/change order notice|notice of lease award|award in process/.test(desc)) {
-    return matchesDfealSledKeywords(row.description, row.organization);
+    return matchesSledKeywords(row.description, row.organization);
   }
   return true;
 }

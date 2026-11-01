@@ -1,7 +1,7 @@
 import * as cheerio from "cheerio";
 import { warmCookieJar, sledFetch } from "@/lib/sled/http";
 import {
-  matchesDfealSledKeywords,
+  matchesSledKeywords,
   parseSledDate,
   sledOpportunityId,
 } from "@/lib/sled/normalize";
@@ -166,7 +166,7 @@ export async function fetchStateUnivIllinoisOpportunities(
   }
 
   const filtered = rows.filter((row) => {
-    if (!options.keyword) return matchesDfealSledKeywords(row.title);
+    if (!options.keyword) return matchesSledKeywords(row.title);
     return true;
   });
 

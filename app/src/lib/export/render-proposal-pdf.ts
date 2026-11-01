@@ -1,16 +1,20 @@
 /**
- * Professional PDF renderer for DFEAL proposal documents.
+ * Professional PDF renderer for proposal documents.
  * Produces top-grade branded output with cover pages, section headers,
  * tables, page numbers, and consistent typography.
  * Now with inline markdown support — no raw `**`, `*`, or `[links]` in output.
  */
 import PDFDocument from "pdfkit";
-import { DFEAL_PROFILE } from "@/config/dfeal-profile";
-import { DFEAL_STYLES, type DocumentMeta } from "@/lib/export/dfeal-styles";
+import {
+  DOCUMENT_STYLES,
+  brandingContactLine,
+  type DocumentBranding,
+  type DocumentMeta,
+} from "@/lib/export/document-styles";
 import { parseInlineMarkdown } from "@/lib/export/parse-markdown";
 import { sanitizeMarkdownOutput } from "@/lib/export/markdown";
 
-const S = DFEAL_STYLES;
+const S = DOCUMENT_STYLES;
 
 // ----------------------------------------------------------------
 // Block-level markdown parser
@@ -115,12 +119,17 @@ function cleanHeading(raw: string): string {
 // ----------------------------------------------------------------
 // Footer helper
 // ----------------------------------------------------------------
-function addFooter(doc: PDFKit.PDFDocument, pageNum: number, totalPages: number) {
+function addFooter(
+  doc: PDFKit.PDFDocument,
+  pageNum: number,
+  totalPages: number,
+  branding: DocumentBranding,
+) {
   const { mutedGray } = S.brand;
   doc.save();
   doc.fontSize(8).fillColor(mutedGray).font(S.typography.font);
   doc.text(
-    `${DFEAL_PROFILE.legalName} — Confidential Proposal`,
+    `${branding.legalName} — Confidential Proposal`,
     S.layout.marginLeft,
     doc.page.height - S.layout.footerY,
     { width: S.layout.lineWidth, align: "left" },
@@ -177,6 +186,7 @@ function drawSectionHeader(
 export async function renderProposalPdf(
   content: string,
   meta: DocumentMeta,
+  branding: DocumentBranding,
 ): Promise<{ buffer: Buffer; filename: string }> {
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({
@@ -190,9 +200,9 @@ export async function renderProposalPdf(
       bufferPages: true,
       info: {
         Title: meta.title,
-        Author: DFEAL_PROFILE.legalName,
+        Author: branding.legalName,
         Subject: `Proposal Document — ${meta.documentType ?? ""}`,
-        Creator: "DFEAL Smart Capture Platform",
+        Creator: "Smart Capture",
       },
     });
 
@@ -200,7 +210,7 @@ export async function renderProposalPdf(
     doc.on("data", (chunk: Buffer) => chunks.push(chunk));
     doc.on("end", () => {
       const buffer = Buffer.concat(chunks);
-      const name = `${meta.title || "dfeal-proposal"}.pdf`;
+      const name = `${meta.title || "proposal"}.pdf`;
       resolve({ buffer, filename: name });
     });
     doc.on("error", reject);
@@ -218,10 +228,10 @@ export async function renderProposalPdf(
     // Gold accent line
     doc.rect(0, S.coverPage.bandHeight, pageWidth, 4).fill(gold);
 
-    // DFEAL name
+    // Firm name
     doc.save();
     doc.fillColor(white).fontSize(28).font(S.typography.fontBold);
-    doc.text(DFEAL_PROFILE.legalName, S.layout.marginLeft, 60, {
+    doc.text(branding.legalName, S.layout.marginLeft, 60, {
       width: S.layout.lineWidth,
     });
     doc.fillColor(gold).fontSize(12).font(S.typography.font);
@@ -271,7 +281,7 @@ export async function renderProposalPdf(
     doc.save();
     doc.fillColor(white).fontSize(9).font(S.typography.font);
     doc.text(
-      `${DFEAL_PROFILE.website} · ${DFEAL_PROFILE.phone} · ${DFEAL_PROFILE.address}`,
+      brandingContactLine(branding),
       S.layout.marginLeft,
       bottomY + 10,
       { width: S.layout.lineWidth, align: "center" },
@@ -586,7 +596,7 @@ export async function renderProposalPdf(
     for (let i = 0; i < pages.count; i++) {
       doc.switchToPage(i);
       if (i === 0) continue;
-      addFooter(doc, i + 1, pages.count);
+      addFooter(doc, i + 1, pages.count, branding);
     }
 
     doc.end();

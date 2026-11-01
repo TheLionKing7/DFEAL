@@ -13,6 +13,7 @@ export interface AnalysisRun {
 }
 
 export async function listAnalysisRuns(
+  firmId: string,
   opportunityId: string,
   limit = 5,
 ): Promise<AnalysisRun[]> {
@@ -20,6 +21,7 @@ export async function listAnalysisRuns(
   const { data, error } = await supabase
     .from("analysis_runs")
     .select("*")
+    .eq("firm_id", firmId)
     .eq("opportunity_id", opportunityId)
     .order("created_at", { ascending: false })
     .limit(limit);
@@ -29,6 +31,7 @@ export async function listAnalysisRuns(
 }
 
 export async function saveAnalysisRun(input: {
+  firm_id: string;
   opportunity_id: string;
   user_email?: string;
   provider: string;
@@ -47,14 +50,13 @@ export async function saveAnalysisRun(input: {
   return data as AnalysisRun;
 }
 
-export async function getLatestScore(opportunityId: string) {
+export async function getLatestScore(firmId: string, opportunityId: string) {
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase
     .from("opportunity_scores")
     .select("*")
+    .eq("firm_id", firmId)
     .eq("opportunity_id", opportunityId)
-    .order("scored_at", { ascending: false })
-    .limit(1)
     .maybeSingle();
 
   if (error) throw new Error(error.message);

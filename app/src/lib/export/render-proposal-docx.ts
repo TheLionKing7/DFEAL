@@ -1,5 +1,5 @@
 /**
- * Professional DOCX renderer for DFEAL proposal documents.
+ * Professional DOCX renderer for proposal documents.
  * Uses the `docx` library to produce compliance-grade Word documents
  * with proper styles, tables, headers/footers, and fonts.
  */
@@ -20,13 +20,17 @@ import {
   Footer,
   ShadingType,
 } from "docx";
-import { DFEAL_PROFILE } from "@/config/dfeal-profile";
-import { DFEAL_STYLES, type DocumentMeta } from "@/lib/export/dfeal-styles";
+import {
+  DOCUMENT_STYLES,
+  brandingContactLine,
+  type DocumentBranding,
+  type DocumentMeta,
+} from "@/lib/export/document-styles";
 import { parseInlineMarkdown } from "@/lib/export/parse-markdown";
 import { sanitizeMarkdownOutput } from "@/lib/export/markdown";
 import type { Buffer } from "buffer";
 
-const S = DFEAL_STYLES;
+const S = DOCUMENT_STYLES;
 
 // Color helpers
 const color = (hex: string) => hex.replace("#", "");
@@ -332,6 +336,7 @@ function parseMarkdownToDocx(markdown: string): (Paragraph | Table)[] {
 export async function renderProposalDocx(
   content: string,
   meta: DocumentMeta,
+  branding: DocumentBranding,
 ): Promise<{ buffer: Buffer; filename: string }> {
   const bodyElements = parseMarkdownToDocx(sanitizeMarkdownOutput(content));
 
@@ -339,13 +344,13 @@ export async function renderProposalDocx(
   const coverPageElements: (Paragraph | Table)[] = [
     // Spacer
     new Paragraph({ spacing: { before: 3000 } }),
-    // DFEAL name
+    // Firm name
     new Paragraph({
       alignment: AlignmentType.CENTER,
       spacing: { after: 100 },
       children: [
         new TextRun({
-          text: DFEAL_PROFILE.legalName,
+          text: branding.legalName,
           bold: true,
           size: Math.round(28 * 2),
           font: "Times New Roman",
@@ -462,7 +467,7 @@ export async function renderProposalDocx(
       alignment: AlignmentType.CENTER,
       children: [
         new TextRun({
-          text: `${DFEAL_PROFILE.website} · ${DFEAL_PROFILE.phone} · ${DFEAL_PROFILE.address}`,
+          text: brandingContactLine(branding),
           size: Math.round(9 * 2),
           font: "Times New Roman",
           color: color(S.brand.mutedGray),
@@ -524,7 +529,7 @@ export async function renderProposalDocx(
                 },
                 children: [
                   new TextRun({
-                    text: `${DFEAL_PROFILE.legalName} — Confidential Proposal`,
+                    text: `${branding.legalName} — Confidential Proposal`,
                     size: Math.round(8 * 2),
                     font: "Times New Roman",
                     color: color(S.brand.mutedGray),
@@ -582,6 +587,6 @@ export async function renderProposalDocx(
   });
 
   const buffer = await Packer.toBuffer(doc);
-  const name = `${meta.title || "dfeal-proposal"}.docx`;
+  const name = `${meta.title || "proposal"}.docx`;
   return { buffer: buffer as unknown as Buffer, filename: name };
 }

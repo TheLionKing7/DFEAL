@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireApiUser } from "@/lib/auth/api-user";
+import { requireFirmApi } from "@/lib/firms/context";
 import { loadDocumentTemplate } from "@/lib/documents/template-loader";
 import { DOCUMENT_TYPES, type DocumentType } from "@/shared/document-types";
 
 export async function GET(request: NextRequest) {
-  const user = await requireApiUser();
-  if (!user?.email) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const ctx = await requireFirmApi();
+  if (ctx instanceof NextResponse) return ctx;
 
   const type = request.nextUrl.searchParams.get("type") as DocumentType | null;
 

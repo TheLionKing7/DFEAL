@@ -1,4 +1,5 @@
-import { buildDfealSystemPrompt } from "@/config/dfeal-profile";
+import { buildFirmSystemPrompt } from "@/lib/firms/prompt";
+import type { FirmProfile } from "@/lib/firms/types";
 import { preprocessAssistantContent } from "@/lib/assistant/format-message";
 import { llmComplete } from "@/lib/ai/complete";
 import { listHotOpportunities } from "@/lib/db/opportunities";
@@ -15,6 +16,7 @@ export interface AssistantOpportunityRef {
 }
 
 export async function runAssistantChat(input: {
+  firm: FirmProfile;
   message: string;
   history: { role: "user" | "assistant"; content: string }[];
   pageContext: AssistantPageContext;
@@ -22,12 +24,12 @@ export async function runAssistantChat(input: {
   favoriteIds?: string[];
   hotOpportunities?: AssistantOpportunityRef[];
 }) {
-  const { message, history, pageContext, settings, favoriteIds = [] } = input;
+  const { firm, message, history, pageContext, settings, favoriteIds = [] } = input;
 
   let hot = input.hotOpportunities;
   if (!hot) {
     try {
-      const rows = await listHotOpportunities(10);
+      const rows = await listHotOpportunities(firm.id, 10);
       hot = rows.map((o) => ({
         id: o.id,
         title: o.title,
@@ -86,7 +88,7 @@ export async function runAssistantChat(input: {
     .join("\n\n");
 
   const userPrompt = [
-    "You are DFEAL's professional capture strategist assistant for Smart Capture.",
+    `You are ${firm.assistantName}, the professional capture strategist for ${firm.legalName} on Smart Capture.`,
     "Write like a senior capture manager briefing a client — confident, specific, human.",
     "",
     "OUTPUT STYLE (strict — violations feel robotic):",
@@ -110,7 +112,8 @@ export async function runAssistantChat(input: {
   ].join("\n");
 
   const { text, provider } = await llmComplete({
-    userPrompt: `${buildDfealSystemPrompt()}\n\n${userPrompt}`,
+    system: buildFirmSystemPrompt(firm),
+    userPrompt,
     maxTokens: 1800,
   });
 

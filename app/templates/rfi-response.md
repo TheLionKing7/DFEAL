@@ -4,7 +4,7 @@
 
 - Formal submission letter to contracting officer
 - Acknowledgment of RFI purpose and non-binding nature
-- Statement of DFEAL interest and qualifications
+- Statement of {{SHORT_NAME}} interest and qualifications
 
 ## 2. Company qualifications summary
 
@@ -13,7 +13,7 @@
 - Respondent: {{LEGAL_NAME}} (UEI {{UEI}}, CAGE {{CAGE}})
 - NAICS: {{PRIMARY_NAICS}}
 - Contact: {{CONTACT_EMAIL}} · {{PHONE}}
-- Executive summary of DFEAL fit for stated need
+- Executive summary of {{SHORT_NAME}} fit for stated need
 - Core competencies directly mapped to RFI scope
 - Certifications and socioeconomic status
 

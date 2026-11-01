@@ -1,6 +1,6 @@
 import { readFileSync } from "fs";
 import { join } from "path";
-import { DFEAL_PROFILE } from "@/config/dfeal-profile";
+import type { FirmProfile } from "@/lib/firms/types";
 import type { DocumentType } from "@/shared/document-types";
 import type { Opportunity } from "@/shared/types/opportunity";
 
@@ -25,18 +25,20 @@ export function loadDocumentTemplate(documentType: DocumentType): string {
 export function fillTemplatePlaceholders(
   template: string,
   opp: Opportunity,
+  p: FirmProfile,
 ): string {
-  const p = DFEAL_PROFILE;
   const replacements: Record<string, string> = {
     "{{LEGAL_NAME}}": p.legalName,
-    "{{UEI}}": p.uei,
-    "{{CAGE}}": p.cage,
+    "{{UEI}}": p.uei ?? "Pending",
+    "{{CAGE}}": p.cage ?? "Pending",
     "{{SAM_STATUS}}": p.samStatus,
     "{{PRIMARY_NAICS}}": p.primaryNaics,
-    "{{CONTACT_EMAIL}}": p.teamContactEmail,
-    "{{PHONE}}": p.phone,
-    "{{WEBSITE}}": p.website,
-    "{{ADDRESS}}": p.address,
+    "{{CONTACT_EMAIL}}": p.contactEmail ?? "",
+    "{{SHORT_NAME}}": p.shortName,
+    "{{NAICS_LIST}}": p.naicsCodes.join(", "),
+    "{{PHONE}}": p.phone ?? "",
+    "{{WEBSITE}}": p.website ?? "",
+    "{{ADDRESS}}": p.address ?? "",
     "{{AGENCY_NAME}}": opp.agency_name ?? "Contracting Agency",
     "{{OPPORTUNITY_TITLE}}": opp.title,
     "{{NOTICE_ID}}": opp.external_id,
@@ -54,7 +56,7 @@ export function fillTemplatePlaceholders(
   return out;
 }
 
-export function getFilledTemplate(documentType: DocumentType, opp: Opportunity) {
+export function getFilledTemplate(documentType: DocumentType, opp: Opportunity, firm: FirmProfile) {
   const raw = loadDocumentTemplate(documentType);
-  return fillTemplatePlaceholders(raw, opp);
+  return fillTemplatePlaceholders(raw, opp, firm);
 }

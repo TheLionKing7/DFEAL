@@ -1,4 +1,5 @@
-import { buildDfealSystemPrompt, DFEAL_PROFILE } from "@/config/dfeal-profile";
+import { buildFirmSystemPrompt } from "@/lib/firms/prompt";
+import type { FirmProfile } from "@/lib/firms/types";
 import { llmComplete } from "@/lib/ai/complete";
 import { parseJsonFromLlm } from "@/lib/ai/parse-json";
 import { enrichOpportunityDetails } from "@/lib/opportunity/enrich";
@@ -10,7 +11,7 @@ export interface OpportunityOverviewSummary {
   scope_of_work: string;
   key_requirements: string[];
   important_dates: string[];
-  dfeal_fit: string;
+  firm_fit: string;
   recommended_next_steps: string[];
   provider: string;
   run_id: string;
@@ -18,16 +19,17 @@ export interface OpportunityOverviewSummary {
 
 export async function summarizeOpportunityOverview(
   opp: Opportunity,
+  firm: FirmProfile,
   userEmail?: string,
 ): Promise<OpportunityOverviewSummary> {
   const details = enrichOpportunityDetails(opp);
 
   const userPrompt = [
-    "Produce an opportunity overview for the DFEAL capture team.",
+    `Produce an opportunity overview for the ${firm.shortName} capture team.`,
     "Return ONLY JSON with keys:",
     "executive_summary (2-3 sentences), scope_of_work (paragraph),",
     "key_requirements (string[]), important_dates (string[]),",
-    "dfeal_fit (paragraph on NAICS/certs/set-aside fit), recommended_next_steps (string[]).",
+    "firm_fit (paragraph on NAICS/certs/set-aside fit for this firm), recommended_next_steps (string[]).",
     "",
     `Title: ${opp.title}`,
     `Agency: ${opp.agency_name ?? "TBD"}`,
@@ -39,19 +41,21 @@ export async function summarizeOpportunityOverview(
     "Description:",
     details.description?.slice(0, 5000) ?? details.synopsis ?? "(limited description in feed)",
     "",
-    `DFEAL profile NAICS focus and certifications apply (${DFEAL_PROFILE.legalName}).`,
+    `Assess fit for ${firm.legalName} using its NAICS focus, certifications, and set-aside eligibility.`,
   ]
     .filter(Boolean)
     .join("\n");
 
   const { text, provider } = await llmComplete({
-    userPrompt: `${buildDfealSystemPrompt()}\n\n${userPrompt}`,
+    system: buildFirmSystemPrompt(firm),
+    userPrompt,
     maxTokens: 2000,
   });
 
   const parsed = parseJsonFromLlm(text);
 
   const run = await saveAnalysisRun({
+    firm_id: firm.id,
     opportunity_id: opp.id,
     user_email: userEmail,
     provider,
@@ -69,7 +73,7 @@ export async function summarizeOpportunityOverview(
     important_dates: Array.isArray(parsed.important_dates)
       ? parsed.important_dates.map(String)
       : [],
-    dfeal_fit: String(parsed.dfeal_fit ?? ""),
+    firm_fit: String(parsed.firm_fit ?? parsed.dfeal_fit ?? ""),
     recommended_next_steps: Array.isArray(parsed.recommended_next_steps)
       ? parsed.recommended_next_steps.map(String)
       : [],

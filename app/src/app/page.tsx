@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { SMART_CAPTURE, TENANT } from "@/config/platform";
+import { SMART_CAPTURE } from "@/config/platform";
 
 export default function Home() {
   return (
@@ -11,7 +11,7 @@ export default function Home() {
         <span className="text-gold">{SMART_CAPTURE.name}</span>
       </h1>
       <p className="mt-4 max-w-lg text-center text-text-muted">
-        AI-powered contracting intelligence for {TENANT.legalName} — daily hot
+        AI-powered contracting intelligence for government contractors — daily hot
         opportunities, go/no-go analysis, proposal generation, and compliance.
       </p>
       <div className="mt-10 flex flex-wrap justify-center gap-4">
@@ -25,7 +25,7 @@ export default function Home() {
           href="/login"
           className="rounded-lg border border-border px-6 py-3 text-sm font-medium hover:bg-bg-surface"
         >
-          Team sign in
+          Sign in
         </Link>
       </div>
       <p className="mt-16 text-xs text-text-muted">

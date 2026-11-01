@@ -1,6 +1,6 @@
 import {
   governmentTypeToMarketTier,
-  matchesDfealSledKeywords,
+  matchesSledKeywords,
   parseGeorgiaDateString,
   sledOpportunityId,
 } from "@/lib/sled/normalize";
@@ -119,7 +119,7 @@ export async function fetchGeorgiaOpportunities(
   const filtered = rows.filter((row) =>
     options.keyword
       ? true
-      : matchesDfealSledKeywords(row.title, row.esourceDescription),
+      : matchesSledKeywords(row.title, row.esourceDescription),
   );
 
   return {
@@ -128,7 +128,7 @@ export async function fetchGeorgiaOpportunities(
     opportunities: filtered.map(normalizeGeorgiaRow),
     message:
       filtered.length < rows.length
-        ? `Filtered to ${filtered.length} DFEAL-relevant of ${rows.length} open events`
+        ? `Filtered to ${filtered.length} relevant of ${rows.length} open events`
         : undefined,
   };
 }

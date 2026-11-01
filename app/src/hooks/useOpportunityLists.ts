@@ -12,7 +12,7 @@ export interface ListItem {
   fit_score?: number | null;
 }
 
-const LS_KEY = "dfeal:opportunity-lists";
+const LS_KEY = "smart-capture:opportunity-lists";
 
 function readLocal(): Record<ListType, string[]> {
   if (typeof window === "undefined") return { track: [], favorite: [] };

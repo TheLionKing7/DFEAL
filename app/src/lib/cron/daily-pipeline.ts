@@ -2,144 +2,149 @@ import { archiveStaleOpportunities } from "@/lib/db/archive";
 import {
   createDigestRun,
   finishDigestRun,
-  getOpportunityById,
-  insertOpportunityScores,
+  getOpportunitiesByIds,
   listActiveOpportunityIds,
-  listUnscoredOpportunityIds,
+  upsertOpportunityScores,
 } from "@/lib/db/opportunities";
-import { sendDailyDigestEmail } from "@/lib/email/daily-digest";
+import { sendDailyDigestEmail, type SendDailyDigestResult } from "@/lib/email/daily-digest";
+import { loadIngestProfile } from "@/lib/firms/ingest-profile";
+import { listFirms } from "@/lib/firms/repository";
+import type { FirmProfile } from "@/lib/firms/types";
 import { ingestAllEnabledGrants } from "@/lib/ingest/grants-ingest";
 import { ingestSamOpportunities } from "@/lib/ingest/sam-ingest";
 import { ingestAllEnabledSled } from "@/lib/ingest/sled-ingest";
+import { logger } from "@/lib/logger";
 import { isHotScore, scoreOpportunity } from "@/lib/scoring/score-opportunity";
+import type { Opportunity } from "@/shared/types/opportunity";
+
+/** Max active opportunities scored per firm per run. */
+const SCORE_LIMIT = Number(process.env.SCORE_LIMIT ?? 1000);
+
+export interface FirmScoringResult {
+  firm_id: string;
+  firm: string;
+  scored: number;
+  hot_count: number;
+  email?: SendDailyDigestResult;
+  error?: string;
+}
 
 export interface DailyPipelineResult {
   digest_id: string;
-  ingest: { fetched: number; upserted: number };
+  firms: number;
+  ingest: { fetched: number; upserted: number; naics_codes: string[] };
   sam_error?: string;
   archived: number;
-  sled_ingest?: {
-    total_fetched: number;
-    total_upserted: number;
-    sources: Record<string, unknown>;
-  };
-  grants_ingest?: {
-    total_fetched: number;
-    total_upserted: number;
-    sources: Record<string, unknown>;
-  };
-  scored: number;
-  hot_count: number;
-  email: { sent: boolean; skipped_reason?: string; recipient?: string };
+  sled_ingest?: { total_fetched: number; total_upserted: number; sources: Record<string, unknown> };
+  grants_ingest?: { total_fetched: number; total_upserted: number; sources: Record<string, unknown> };
+  scoring: FirmScoringResult[];
 }
 
-export async function runDailyPipeline(): Promise<DailyPipelineResult> {
-  const digestId = await createDigestRun();
+function errorMessage(error: unknown, fallback: string) {
+  return error instanceof Error ? error.message : fallback;
+}
+
+/** Score a batch of opportunities for one firm and persist the current scores. */
+export async function scoreForFirm(
+  firm: FirmProfile,
+  opportunities: Opportunity[],
+  digestId?: string,
+): Promise<{ scored: number; hot_count: number }> {
+  let hotCount = 0;
+  const scores = opportunities.map((opp) => {
+    const result = scoreOpportunity(opp, firm);
+    if (isHotScore(result)) hotCount += 1;
+    return {
+      opportunity_id: opp.id,
+      fit_score: result.fit_score,
+      go_no_go: result.go_no_go,
+      rationale: result.rationale,
+      digest_batch_id: digestId,
+    };
+  });
+  await upsertOpportunityScores(firm.id, scores);
+  return { scored: scores.length, hot_count: hotCount };
+}
+
+async function loadActiveOpportunities(limit = SCORE_LIMIT) {
+  const ids = await listActiveOpportunityIds(limit);
+  return getOpportunitiesByIds(ids);
+}
+
+export async function runDailyPipeline(options?: { sendEmail?: boolean }): Promise<DailyPipelineResult> {
+  const sendEmail = options?.sendEmail ?? true;
+  const digestId = await createDigestRun("daily_pipeline");
 
   try {
-    // SAM.gov is the largest source but occasionally returns 503 "no healthy
-    // upstream". Don't let a SAM failure abort grants, archiving, scoring,
-    // and email — record the error and continue with the remaining sources.
-    let ingest: Awaited<ReturnType<typeof ingestSamOpportunities>> = {
-      fetched: 0,
-      upserted: 0,
-      naics_codes: [],
-    };
+    const profile = await loadIngestProfile();
+    if (profile.firms.length === 0) {
+      logger.warn("daily_pipeline.no_firms", {});
+    }
+
+    // Ingest each source independently — one upstream outage must not abort the run.
+    let ingest: DailyPipelineResult["ingest"] = { fetched: 0, upserted: 0, naics_codes: [] };
     let samError: string | undefined;
     try {
-      ingest = await ingestSamOpportunities(30);
+      ingest = await ingestSamOpportunities(30, profile.naicsCodes);
     } catch (error) {
-      samError = error instanceof Error ? error.message : "SAM ingest failed";
+      samError = errorMessage(error, "SAM ingest failed");
+      logger.error("daily_pipeline.sam_failed", { error: samError });
     }
 
-    let sledIngest: Awaited<ReturnType<typeof ingestAllEnabledSled>> | undefined;
-    let grantsIngest: Awaited<ReturnType<typeof ingestAllEnabledGrants>> | undefined;
-    try {
-      sledIngest = await ingestAllEnabledSled(30);
-    } catch {
-      sledIngest = { sources: {}, total_fetched: 0, total_upserted: 0 };
-    }
-    try {
-      grantsIngest = await ingestAllEnabledGrants(120);
-    } catch {
-      grantsIngest = { sources: {}, total_fetched: 0, total_upserted: 0 };
-    }
-    // Archive stale/expired opportunities so only current ones surface
+    const sledIngest = await ingestAllEnabledSled(30, profile.keywords).catch((error) => {
+      logger.error("daily_pipeline.sled_failed", { error: errorMessage(error, "SLED failed") });
+      return { sources: {}, total_fetched: 0, total_upserted: 0 };
+    });
+    const grantsIngest = await ingestAllEnabledGrants(120, profile.keywords).catch((error) => {
+      logger.error("daily_pipeline.grants_failed", { error: errorMessage(error, "Grants failed") });
+      return { sources: {}, total_fetched: 0, total_upserted: 0 };
+    });
+
     const { archivedCount } = await archiveStaleOpportunities();
 
-    const activeIds = await listActiveOpportunityIds(200);
-    const scores = [];
-    let hotCount = 0;
+    const opportunities = await loadActiveOpportunities();
+    const ingested =
+      ingest.upserted + sledIngest.total_upserted + grantsIngest.total_upserted;
 
-    for (const id of activeIds) {
-      const opp = await getOpportunityById(id);
-      if (!opp) continue;
-      const result = scoreOpportunity(opp);
-      if (isHotScore(result)) hotCount += 1;
-      scores.push({
-        opportunity_id: id,
-        fit_score: result.fit_score,
-        go_no_go: result.go_no_go,
-        rationale: result.rationale,
-        digest_batch_id: digestId,
-      });
-    }
-
-    await insertOpportunityScores(scores);
-
-    let emailResult: Awaited<ReturnType<typeof sendDailyDigestEmail>> = {
-      sent: false,
-      skipped_reason: "not attempted",
-    };
-
-    try {
-      emailResult = await sendDailyDigestEmail({
-        hotCount,
-        scored: scores.length,
-        ingested: ingest.upserted + (sledIngest?.total_upserted ?? 0) + (grantsIngest?.total_upserted ?? 0),
-      });
-    } catch (emailError) {
-      const message =
-        emailError instanceof Error ? emailError.message : "Email send failed";
-      emailResult = { sent: false, skipped_reason: message };
+    const scoring: FirmScoringResult[] = [];
+    for (const firm of profile.firms) {
+      const row: FirmScoringResult = { firm_id: firm.id, firm: firm.slug, scored: 0, hot_count: 0 };
+      try {
+        Object.assign(row, await scoreForFirm(firm, opportunities, digestId));
+        if (sendEmail) {
+          row.email = await sendDailyDigestEmail(firm, {
+            hotCount: row.hot_count,
+            scored: row.scored,
+            ingested,
+          }).catch((error) => ({ sent: false, skipped_reason: errorMessage(error, "Email failed") }));
+        }
+      } catch (error) {
+        row.error = errorMessage(error, "Scoring failed");
+        logger.error("daily_pipeline.firm_failed", { firm: firm.slug, error: row.error });
+      }
+      scoring.push(row);
     }
 
     await finishDigestRun(digestId, {
       status: "success",
-      opportunities_scored: scores.length,
-      hot_count: hotCount,
-      email_sent: emailResult.sent,
+      opportunities_scored: scoring.reduce((n, r) => n + r.scored, 0),
+      hot_count: scoring.reduce((n, r) => n + r.hot_count, 0),
+      email_sent: scoring.some((r) => r.email?.sent),
+      error_message: samError ?? null,
     });
 
     return {
       digest_id: digestId,
+      firms: profile.firms.length,
       ingest,
       sam_error: samError,
       archived: archivedCount,
-      sled_ingest: sledIngest
-        ? {
-            total_fetched: sledIngest.total_fetched,
-            total_upserted: sledIngest.total_upserted,
-            sources: sledIngest.sources,
-          }
-        : undefined,
-      grants_ingest: grantsIngest
-        ? {
-            total_fetched: grantsIngest.total_fetched,
-            total_upserted: grantsIngest.total_upserted,
-            sources: grantsIngest.sources,
-          }
-        : undefined,
-      scored: scores.length,
-      hot_count: hotCount,
-      email: {
-        sent: emailResult.sent,
-        skipped_reason: emailResult.skipped_reason,
-        recipient: emailResult.recipient,
-      },
+      sled_ingest: sledIngest,
+      grants_ingest: grantsIngest,
+      scoring,
     };
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Daily pipeline failed";
+    const message = errorMessage(error, "Daily pipeline failed");
     await finishDigestRun(digestId, {
       status: "failed",
       opportunities_scored: 0,
@@ -150,34 +155,22 @@ export async function runDailyPipeline(): Promise<DailyPipelineResult> {
   }
 }
 
-export async function runScoringOnly(limit = 200, rescoreAll = true) {
-  const digestId = await createDigestRun();
-  const ids = rescoreAll
-    ? await listActiveOpportunityIds(limit)
-    : await listUnscoredOpportunityIds(limit);
-  const scores = [];
-  let hotCount = 0;
-
-  for (const id of ids) {
-    const opp = await getOpportunityById(id);
-    if (!opp) continue;
-    const result = scoreOpportunity(opp);
-    if (isHotScore(result)) hotCount += 1;
-    scores.push({
-      opportunity_id: id,
-      fit_score: result.fit_score,
-      go_no_go: result.go_no_go,
-      rationale: result.rationale,
-      digest_batch_id: digestId,
+/** Re-score without ingesting — all active firms, or one firm (e.g. right after onboarding). */
+export async function runScoringOnly(options?: { firmId?: string; limit?: number }) {
+  const firms = (await listFirms({ activeOnly: true })).filter(
+    (f) => !options?.firmId || f.id === options.firmId,
+  );
+  const opportunities = await loadActiveOpportunities(options?.limit ?? SCORE_LIMIT);
+  const results: FirmScoringResult[] = [];
+  for (const firm of firms) {
+    const digestId = await createDigestRun("rescore", firm.id);
+    const r = await scoreForFirm(firm, opportunities, digestId);
+    await finishDigestRun(digestId, {
+      status: "success",
+      opportunities_scored: r.scored,
+      hot_count: r.hot_count,
     });
+    results.push({ firm_id: firm.id, firm: firm.slug, ...r });
   }
-
-  await insertOpportunityScores(scores);
-  await finishDigestRun(digestId, {
-    status: "success",
-    opportunities_scored: scores.length,
-    hot_count: hotCount,
-  });
-
-  return { digest_id: digestId, scored: scores.length, hot_count: hotCount };
+  return results;
 }

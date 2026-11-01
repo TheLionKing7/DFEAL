@@ -1,35 +1,35 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireApiUser } from "@/lib/auth/api-user";
+import { requireFirmApi } from "@/lib/firms/context";
+import type { FirmProfile } from "@/lib/firms/types";
 import { lookupSamEntity, searchSamEntities } from "@/lib/sam-gov/entity";
-import { DFEAL_PROFILE } from "@/config/dfeal-profile";
 import type { SamEntity } from "@/shared/types/entity";
 
-function profileFallbackEntity(uei?: string, cage?: string): SamEntity | null {
-  const ueiMatch = uei?.toUpperCase() === DFEAL_PROFILE.uei.toUpperCase();
-  const cageMatch = cage?.toUpperCase() === DFEAL_PROFILE.cage.toUpperCase();
+function profileFallbackEntity(firm: FirmProfile, uei?: string, cage?: string): SamEntity | null {
+  const ueiMatch = Boolean(firm.uei && uei?.toUpperCase() === firm.uei.toUpperCase());
+  const cageMatch = Boolean(firm.cage && cage?.toUpperCase() === firm.cage.toUpperCase());
   if (!ueiMatch && !cageMatch) return null;
 
   return {
-    uei: DFEAL_PROFILE.uei,
-    cage: DFEAL_PROFILE.cage,
-    legal_name: DFEAL_PROFILE.legalName,
+    uei: firm.uei ?? "",
+    cage: firm.cage,
+    legal_name: firm.legalName,
     dba_name: null,
-    registration_status: DFEAL_PROFILE.samStatus,
-    expiration_date: DFEAL_PROFILE.samExpirationDate,
-    naics_codes: [DFEAL_PROFILE.primaryNaics, ...DFEAL_PROFILE.secondaryNaics],
-    psc_codes: DFEAL_PROFILE.pscCodes,
-    physical_address: { state: "IL", city: "Chicago area" },
+    registration_status: firm.samStatus,
+    expiration_date: firm.samExpirationDate,
+    naics_codes: firm.naicsCodes,
+    psc_codes: firm.pscCodes,
+    physical_address: firm.homeState ? { state: firm.homeState } : null,
     fetched_at: new Date().toISOString(),
     raw_data: {
-      source: "dfeal_profile_fallback",
+      source: "firm_profile_fallback",
       note: "SAM.gov returned no match for this UEI/CAGE — showing on-file company profile. Verify registration at sam.gov.",
     },
   };
 }
 
 export async function GET(request: NextRequest) {
-  const user = await requireApiUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const ctx = await requireFirmApi();
+  if (ctx instanceof NextResponse) return ctx;
 
   try {
     const uei = request.nextUrl.searchParams.get("uei") ?? undefined;
@@ -56,11 +56,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ entity, source: "sam" });
     }
 
-    const fallback = profileFallbackEntity(uei, cage);
+    const fallback = profileFallbackEntity(ctx.firm, uei, cage);
     if (fallback) {
       let suggestions: SamEntity[] = [];
       try {
-        suggestions = await searchSamEntities({ name: DFEAL_PROFILE.legalName });
+        suggestions = await searchSamEntities({ name: ctx.firm.legalName });
       } catch {
         /* optional */
       }

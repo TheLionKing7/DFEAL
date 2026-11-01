@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { PageHeader, PageShell, Panel } from "@/components/layout/PageShell";
-import { TENANT } from "@/config/platform";
+import { useFirm } from "@/components/firm/FirmProvider";
 import type { UserAutomation } from "@/lib/db/user-workspace";
 
 const DEFAULT_AUTOMATION: Omit<UserAutomation, "id" | "created_at" | "updated_at"> = {
@@ -20,6 +20,7 @@ const DEFAULT_AUTOMATION: Omit<UserAutomation, "id" | "created_at" | "updated_at
 };
 
 export default function AutomationsPage() {
+  const firm = useFirm();
   const [automations, setAutomations] = useState<UserAutomation[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -81,7 +82,7 @@ export default function AutomationsPage() {
     <PageShell className="max-w-3xl">
       <PageHeader
         title="Automations"
-        description={`Configure capture workflows for ${TENANT.assistantName} — alerts, approvals, and document drafting.`}
+        description={`Configure capture workflows for ${firm.assistantName} — alerts, approvals, and document drafting.`}
       />
 
       <Panel className="space-y-4">

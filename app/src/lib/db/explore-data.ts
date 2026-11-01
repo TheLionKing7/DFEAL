@@ -7,6 +7,7 @@ import { classifyOpportunity } from "@/lib/opportunity/classify";
 import { dedupeHotOpportunityRows, dedupeOpportunityCards } from "@/lib/opportunity/dedupe";
 import { scoreOpportunity } from "@/lib/scoring/score-opportunity";
 import type { OpportunityCardData } from "@/components/opportunity/OpportunityCard";
+import type { FirmProfile } from "@/lib/firms/types";
 
 export interface ExploreLane {
   id: string;
@@ -16,10 +17,11 @@ export interface ExploreLane {
 }
 
 function toCard(
+  firm: FirmProfile,
   opp: ReturnType<typeof dbRowToOpportunity>,
   extras?: Partial<OpportunityCardData>,
 ): OpportunityCardData {
-  const scored = scoreOpportunity(opp);
+  const scored = scoreOpportunity(opp, firm);
   const classification = classifyOpportunity(opp);
   return {
     id: opp.id,
@@ -44,12 +46,13 @@ function isGrantSource(source: string, raw?: Record<string, unknown> | null) {
   return false;
 }
 
-export async function loadExplorePageData() {
+export async function loadExplorePageData(firm: FirmProfile) {
   const supabase = getSupabaseAdmin();
 
   const { data: hotRows, error: hotError } = await supabase
     .from("hot_opportunities")
     .select("*")
+    .eq("firm_id", firm.id)
     .or(freshnessOrFilter())
     .order("fit_score", { ascending: false })
     .limit(40);
@@ -62,7 +65,7 @@ export async function loadExplorePageData() {
     dedupedHotRows
       .map((row) => {
         const opp = dbRowToOpportunity(row);
-        return toCard(opp, {
+        return toCard(firm, opp, {
           fit_score: row.fit_score,
           go_no_go: row.go_no_go,
           score_rationale: row.score_rationale,
@@ -81,7 +84,7 @@ export async function loadExplorePageData() {
 
   if (recentError) throw new Error(recentError.message);
 
-  const recent = (recentRows ?? []).map((row) => toCard(dbRowToOpportunity(row)));
+  const recent = (recentRows ?? []).map((row) => toCard(firm, dbRowToOpportunity(row)));
 
   const contracts = dedupeOpportunityCards(
     recent.filter((c) => c.category === "contract_opportunity"),
@@ -136,14 +139,14 @@ export async function loadExplorePageData() {
 
   const federalItems = dedupeOpportunityCards(
     (federalRows ?? [])
-      .map((row) => toCard(dbRowToOpportunity(row)))
+      .map((row) => toCard(firm, dbRowToOpportunity(row)))
       .filter((c) => c.category === "contract_opportunity")
       .sort((a, b) => (b.fit_score ?? 0) - (a.fit_score ?? 0)),
   ).slice(0, 4);
 
   const stateLocalItems = dedupeOpportunityCards(
     (stateRows ?? [])
-      .map((row) => toCard(dbRowToOpportunity(row)))
+      .map((row) => toCard(firm, dbRowToOpportunity(row)))
       .filter((c) => c.category === "contract_opportunity")
       .sort((a, b) => (b.fit_score ?? 0) - (a.fit_score ?? 0)),
   ).slice(0, 4);
@@ -156,7 +159,7 @@ export async function loadExplorePageData() {
           row.raw_json as Record<string, unknown> | null,
         ),
       )
-      .map((row) => toCard(dbRowToOpportunity(row)))
+      .map((row) => toCard(firm, dbRowToOpportunity(row)))
       .filter((c) => c.category === "contract_opportunity")
       .sort((a, b) => (b.fit_score ?? 0) - (a.fit_score ?? 0)),
   ).slice(0, 4);

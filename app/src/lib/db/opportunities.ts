@@ -100,11 +100,12 @@ export async function listAgencySummaries(limit = 50) {
     .slice(0, limit);
 }
 
-export async function listHotOpportunities(limit = 12) {
+export async function listHotOpportunities(firmId: string, limit = 12) {
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase
     .from("hot_opportunities")
     .select("*")
+    .eq("firm_id", firmId)
     .or(freshnessOrFilter())
     .order("fit_score", { ascending: false })
     .limit(limit);
@@ -129,7 +130,7 @@ export async function listActiveOpportunityIds(limit = 200): Promise<string[]> {
   return (data ?? []).map((r) => r.id);
 }
 
-export async function listUnscoredOpportunityIds(limit = 100): Promise<string[]> {
+export async function listUnscoredOpportunityIds(firmId: string, limit = 100): Promise<string[]> {
   const supabase = getSupabaseAdmin();
 
   const { data: active, error: activeError } = await supabase
@@ -147,6 +148,7 @@ export async function listUnscoredOpportunityIds(limit = 100): Promise<string[]>
   const { data: scored, error: scoredError } = await supabase
     .from("opportunity_scores")
     .select("opportunity_id")
+    .eq("firm_id", firmId)
     .in("opportunity_id", ids);
 
   if (scoredError) throw new Error(scoredError.message);
@@ -165,6 +167,21 @@ export async function getOpportunityById(id: string): Promise<Opportunity | null
 
   if (error) throw new Error(error.message);
   return data ? dbRowToOpportunity(data) : null;
+}
+
+export async function getOpportunitiesByIds(ids: string[]): Promise<Opportunity[]> {
+  if (ids.length === 0) return [];
+  const supabase = getSupabaseAdmin();
+  const out: Opportunity[] = [];
+  for (let i = 0; i < ids.length; i += 100) {
+    const { data, error } = await supabase
+      .from("opportunities")
+      .select("*")
+      .in("id", ids.slice(i, i + 100));
+    if (error) throw new Error(error.message);
+    out.push(...(data ?? []).map(dbRowToOpportunity));
+  }
+  return out;
 }
 
 export async function updateIngestCursor(
@@ -188,7 +205,9 @@ export async function updateIngestCursor(
   if (error) throw new Error(error.message);
 }
 
-export async function insertOpportunityScores(
+/** Upsert the current score for each (firm, opportunity). */
+export async function upsertOpportunityScores(
+  firmId: string,
   scores: {
     opportunity_id: string;
     fit_score: number;
@@ -199,15 +218,21 @@ export async function insertOpportunityScores(
 ) {
   if (scores.length === 0) return;
   const supabase = getSupabaseAdmin();
-  const { error } = await supabase.from("opportunity_scores").insert(scores);
-  if (error) throw new Error(error.message);
+  const scoredAt = new Date().toISOString();
+  const rows = scores.map((s) => ({ ...s, firm_id: firmId, scored_at: scoredAt }));
+  for (let i = 0; i < rows.length; i += 200) {
+    const { error } = await supabase
+      .from("opportunity_scores")
+      .upsert(rows.slice(i, i + 200), { onConflict: "firm_id,opportunity_id" });
+    if (error) throw new Error(error.message);
+  }
 }
 
-export async function createDigestRun(runType = "daily_hot_opportunities") {
+export async function createDigestRun(runType = "daily_hot_opportunities", firmId?: string) {
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase
     .from("digest_runs")
-    .insert({ run_type: runType, status: "running" })
+    .insert({ run_type: runType, status: "running", firm_id: firmId ?? null })
     .select("id")
     .single();
 

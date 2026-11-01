@@ -1,74 +1,63 @@
 import { NextRequest, NextResponse } from "next/server";
 import { runAssistantChat } from "@/lib/ai/assistant";
-import { requireApiUser } from "@/lib/auth/api-user";
-import { appendChatMessage, createChatSession } from "@/lib/db/chat";
+import { appendChatMessage, createChatSession, isChatSessionOwner } from "@/lib/db/chat";
 import { getAssistantSettings, getFavoriteOpportunityIds } from "@/lib/db/user-workspace";
-import { isDatabaseConfigured } from "@/lib/db/supabase-admin";
+import { requireFirmApi } from "@/lib/firms/context";
+import { badRequest, readJson, serverError } from "@/lib/http/json";
+import { rateLimit } from "@/lib/http/rate-limit";
 import type { AssistantPageContext } from "@/shared/assistant-page-context";
 
 export const maxDuration = 60;
 
-export async function POST(request: NextRequest) {
-  const user = await requireApiUser();
-  if (!user?.email) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+const MAX_MESSAGE_CHARS = 8000;
 
-  const body = (await request.json()) as {
+export async function POST(request: NextRequest) {
+  const ctx = await requireFirmApi();
+  if (ctx instanceof NextResponse) return ctx;
+  const limited = rateLimit(`assistant:${ctx.user.email}`, 30, 60_000);
+  if (limited) return limited;
+
+  const body = await readJson<{
     message?: string;
     session_id?: string | null;
     page_context?: AssistantPageContext;
     history?: { role: "user" | "assistant"; content: string }[];
-  };
+  }>(request);
+  const message = body?.message?.trim();
+  if (!body || !message) return badRequest("message required");
+  if (message.length > MAX_MESSAGE_CHARS) return badRequest("message too long");
 
-  if (!body.message?.trim()) {
-    return NextResponse.json({ error: "message required" }, { status: 400 });
-  }
-
-  const pageContext = body.page_context ?? {
-    page: "unknown",
-    pathname: "/",
-    label: "Dashboard",
-  };
+  const scope = { firmId: ctx.firm.id, userEmail: ctx.user.email };
+  const pageContext = body.page_context ?? { page: "unknown", pathname: "/", label: "Dashboard" };
 
   try {
     let sessionId = body.session_id ?? null;
-    if (isDatabaseConfigured()) {
-      if (!sessionId) {
-        sessionId = await createChatSession(user.email, pageContext);
-      }
-      await appendChatMessage({
-        session_id: sessionId,
-        role: "user",
-        content: body.message.trim(),
-      });
-    }
+    if (sessionId && !(await isChatSessionOwner(scope, sessionId))) sessionId = null;
+    if (!sessionId) sessionId = await createChatSession(scope, pageContext);
+    await appendChatMessage({ session_id: sessionId, role: "user", content: message });
 
-    const [settings, favoriteIds] = isDatabaseConfigured()
-      ? await Promise.all([
-          getAssistantSettings(user.email).catch(() => undefined),
-          getFavoriteOpportunityIds(user.email).catch(() => [] as string[]),
-        ])
-      : [undefined, [] as string[]];
+    const [settings, favoriteIds] = await Promise.all([
+      getAssistantSettings(ctx.firm.id, ctx.user.email).catch(() => undefined),
+      getFavoriteOpportunityIds(ctx.firm.id, ctx.user.email).catch(() => [] as string[]),
+    ]);
+
+    const history = (body.history ?? [])
+      .filter((m) => (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
+      .slice(-8)
+      .map((m) => ({ role: m.role, content: m.content.slice(0, MAX_MESSAGE_CHARS) }));
 
     const { reply, provider } = await runAssistantChat({
-      message: body.message.trim(),
-      history: body.history ?? [],
+      firm: ctx.firm,
+      message,
+      history,
       pageContext,
       settings,
       favoriteIds,
     });
 
-    if (isDatabaseConfigured() && sessionId) {
-      await appendChatMessage({
-        session_id: sessionId,
-        role: "assistant",
-        content: reply,
-        provider,
-      });
-    }
-
+    await appendChatMessage({ session_id: sessionId, role: "assistant", content: reply, provider });
     return NextResponse.json({ ok: true, reply, session_id: sessionId, provider });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Assistant failed";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return serverError("api.assistant.failed", error, "Assistant failed");
   }
 }

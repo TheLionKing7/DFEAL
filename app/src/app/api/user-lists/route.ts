@@ -1,78 +1,61 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireApiUser } from "@/lib/auth/api-user";
 import {
   addToUserList,
   listUserOpportunityList,
   removeFromUserList,
   type OpportunityListType,
 } from "@/lib/db/user-workspace";
-import { isDatabaseConfigured } from "@/lib/db/supabase-admin";
+import { requireFirmApi } from "@/lib/firms/context";
+import { badRequest, readJson, serverError } from "@/lib/http/json";
+
+function isListType(v: unknown): v is OpportunityListType {
+  return v === "track" || v === "favorite";
+}
 
 export async function GET(request: NextRequest) {
-  const user = await requireApiUser();
-  if (!user?.email) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!isDatabaseConfigured()) {
-    return NextResponse.json({ items: [], storage: "none" });
-  }
+  const ctx = await requireFirmApi();
+  if (ctx instanceof NextResponse) return ctx;
 
-  const listType = request.nextUrl.searchParams.get("type") as OpportunityListType | null;
-  if (listType !== "track" && listType !== "favorite") {
-    return NextResponse.json({ error: "type must be track or favorite" }, { status: 400 });
-  }
+  const listType = request.nextUrl.searchParams.get("type");
+  if (!isListType(listType)) return badRequest("type must be track or favorite");
 
   try {
-    const items = await listUserOpportunityList(user.email, listType);
+    const items = await listUserOpportunityList(ctx.firm.id, ctx.user.email, listType);
     return NextResponse.json({ items, storage: "database" });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to load list";
-    return NextResponse.json({ error: message, items: [] }, { status: 500 });
+    return serverError("api.user_lists.get_failed", error, "Failed to load list");
   }
 }
 
 export async function POST(request: NextRequest) {
-  const user = await requireApiUser();
-  if (!user?.email) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!isDatabaseConfigured()) {
-    return NextResponse.json({ error: "Database not configured" }, { status: 503 });
-  }
+  const ctx = await requireFirmApi();
+  if (ctx instanceof NextResponse) return ctx;
 
-  const body = (await request.json()) as {
-    opportunity_id?: string;
-    list_type?: OpportunityListType;
-  };
-
-  if (!body.opportunity_id || !body.list_type) {
-    return NextResponse.json({ error: "opportunity_id and list_type required" }, { status: 400 });
+  const body = await readJson<{ opportunity_id?: string; list_type?: string }>(request);
+  if (!body?.opportunity_id || !isListType(body.list_type)) {
+    return badRequest("opportunity_id and list_type required");
   }
 
   try {
-    const item = await addToUserList(user.email, body.opportunity_id, body.list_type);
+    const item = await addToUserList(ctx.firm.id, ctx.user.email, body.opportunity_id, body.list_type);
     return NextResponse.json({ ok: true, item });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to add";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return serverError("api.user_lists.post_failed", error, "Failed to add");
   }
 }
 
 export async function DELETE(request: NextRequest) {
-  const user = await requireApiUser();
-  if (!user?.email) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!isDatabaseConfigured()) {
-    return NextResponse.json({ error: "Database not configured" }, { status: 503 });
-  }
+  const ctx = await requireFirmApi();
+  if (ctx instanceof NextResponse) return ctx;
 
   const opportunityId = request.nextUrl.searchParams.get("opportunity_id");
-  const listType = request.nextUrl.searchParams.get("type") as OpportunityListType | null;
-
-  if (!opportunityId || (listType !== "track" && listType !== "favorite")) {
-    return NextResponse.json({ error: "opportunity_id and type required" }, { status: 400 });
-  }
+  const listType = request.nextUrl.searchParams.get("type");
+  if (!opportunityId || !isListType(listType)) return badRequest("opportunity_id and type required");
 
   try {
-    await removeFromUserList(user.email, opportunityId, listType);
+    await removeFromUserList(ctx.firm.id, ctx.user.email, opportunityId, listType);
     return NextResponse.json({ ok: true });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to remove";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return serverError("api.user_lists.delete_failed", error, "Failed to remove");
   }
 }

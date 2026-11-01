@@ -1,55 +1,55 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireApiUser } from "@/lib/auth/api-user";
 import {
   deleteAutomation,
   listAutomations,
   upsertAutomation,
   type UserAutomation,
 } from "@/lib/db/user-workspace";
-import { isDatabaseConfigured } from "@/lib/db/supabase-admin";
+import { requireFirmApi } from "@/lib/firms/context";
+import { badRequest, readJson, serverError } from "@/lib/http/json";
 
 export async function GET() {
-  const user = await requireApiUser();
-  if (!user?.email) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!isDatabaseConfigured()) return NextResponse.json({ automations: [] });
-
-  const automations = await listAutomations(user.email);
-  return NextResponse.json({ automations });
+  const ctx = await requireFirmApi();
+  if (ctx instanceof NextResponse) return ctx;
+  try {
+    return NextResponse.json({ automations: await listAutomations(ctx.firm.id, ctx.user.email) });
+  } catch (error) {
+    return serverError("api.automations.get_failed", error);
+  }
 }
 
 export async function POST(request: NextRequest) {
-  const user = await requireApiUser();
-  if (!user?.email) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!isDatabaseConfigured()) {
-    return NextResponse.json({ error: "Database not configured" }, { status: 503 });
+  const ctx = await requireFirmApi();
+  if (ctx instanceof NextResponse) return ctx;
+
+  const body = await readJson<Partial<UserAutomation> & { name?: string }>(request);
+  if (!body?.name?.trim()) return badRequest("name required");
+
+  try {
+    const automation = await upsertAutomation(ctx.firm.id, ctx.user.email, {
+      id: body.id,
+      name: body.name.trim().slice(0, 120),
+      enabled: body.enabled,
+      description: body.description?.slice(0, 1000) ?? null,
+      config: body.config ?? {},
+    });
+    return NextResponse.json({ ok: true, automation });
+  } catch (error) {
+    return serverError("api.automations.post_failed", error);
   }
-
-  const body = (await request.json()) as Partial<UserAutomation> & { name?: string };
-  if (!body.name?.trim()) {
-    return NextResponse.json({ error: "name required" }, { status: 400 });
-  }
-
-  const automation = await upsertAutomation(user.email, {
-    id: body.id,
-    name: body.name.trim(),
-    enabled: body.enabled,
-    description: body.description ?? null,
-    config: body.config ?? {},
-  });
-
-  return NextResponse.json({ ok: true, automation });
 }
 
 export async function DELETE(request: NextRequest) {
-  const user = await requireApiUser();
-  if (!user?.email) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!isDatabaseConfigured()) {
-    return NextResponse.json({ error: "Database not configured" }, { status: 503 });
-  }
+  const ctx = await requireFirmApi();
+  if (ctx instanceof NextResponse) return ctx;
 
   const id = request.nextUrl.searchParams.get("id");
-  if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
+  if (!id) return badRequest("id required");
 
-  await deleteAutomation(user.email, id);
-  return NextResponse.json({ ok: true });
+  try {
+    await deleteAutomation(ctx.firm.id, ctx.user.email, id);
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    return serverError("api.automations.delete_failed", error);
+  }
 }

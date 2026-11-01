@@ -15,6 +15,8 @@ export interface LlmCompleteResult {
 }
 
 export async function llmComplete(options: {
+  /** System prompt — normally buildFirmSystemPrompt(firm). */
+  system: string;
   userPrompt: string;
   maxTokens?: number;
 }): Promise<LlmCompleteResult> {

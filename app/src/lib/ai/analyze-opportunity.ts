@@ -1,4 +1,5 @@
-import { buildDfealSystemPrompt, DFEAL_PROFILE } from "@/config/dfeal-profile";
+import { buildFirmSystemPrompt } from "@/lib/firms/prompt";
+import type { FirmProfile } from "@/lib/firms/types";
 import { llmComplete } from "@/lib/ai/complete";
 import { parseJsonFromLlm } from "@/lib/ai/parse-json";
 import { saveAnalysisRun } from "@/lib/db/analysis";
@@ -25,16 +26,17 @@ function normalizeGoNoGo(value: unknown): "go" | "no_go" | "review" {
 
 export async function analyzeOpportunityWithAi(
   opp: Opportunity,
+  firm: FirmProfile,
   userEmail?: string,
 ): Promise<OpportunityAnalysis> {
-  const ruleScore = scoreOpportunity(opp);
+  const ruleScore = scoreOpportunity(opp, firm);
   const userPrompt = [
-    "You are the DFEAL capture analyst. Evaluate this opportunity for bid/no-bid.",
+    `You are the ${firm.shortName} capture analyst. Evaluate this opportunity for bid/no-bid.`,
     "Return ONLY valid JSON (no markdown) with keys:",
     "fit_score (0-100 number), go_no_go (go|no_go|review), summary (string),",
     "strengths (string[]), risks (string[]), recommended_actions (string[]), teaming_notes (string).",
     "",
-    `Company: ${DFEAL_PROFILE.legalName} UEI ${DFEAL_PROFILE.uei}`,
+    `Company: ${firm.legalName}${firm.uei ? ` UEI ${firm.uei}` : ""}`,
     `Rule-based pre-score: ${ruleScore.fit_score} (${ruleScore.go_no_go}) — ${ruleScore.rationale}`,
     "",
     "Opportunity:",
@@ -55,7 +57,8 @@ export async function analyzeOpportunityWithAi(
   ].join("\n");
 
   const { text, provider } = await llmComplete({
-    userPrompt: `${buildDfealSystemPrompt()}\n\n${userPrompt}`,
+    system: buildFirmSystemPrompt(firm),
+    userPrompt,
     maxTokens: 2500,
   });
 
@@ -64,6 +67,7 @@ export async function analyzeOpportunityWithAi(
   const goNoGo = normalizeGoNoGo(parsed.go_no_go ?? ruleScore.go_no_go);
 
   const run = await saveAnalysisRun({
+    firm_id: firm.id,
     opportunity_id: opp.id,
     user_email: userEmail,
     provider,

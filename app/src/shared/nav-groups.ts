@@ -20,13 +20,6 @@ export const NAV_GROUPS: NavGroup[] = [
       { href: "/explore", label: "Hot feed" },
       { href: "/opportunities", label: "All federal" },
       ...OPPORTUNITY_LANES.filter((l) => l.phase <= 3)
-        .sort((a, b) => {
-          if (a.id === "illinois") return -1;
-          if (b.id === "illinois") return 1;
-          if (a.id === "federal") return -1;
-          if (b.id === "federal") return 1;
-          return 0;
-        })
         .map((l) => ({
         href: l.href,
         label: l.label,
@@ -77,12 +70,12 @@ export const ASSISTANT_PROMPTS = [
   {
     title: "Assess my best-fit opportunities this week",
     prompt:
-      "Review federal, Illinois, and SLED hot opportunities scored for DFEAL. List the top 5 with [[opp:id|title]] links, go/no-go rationale, and deadlines in the next 14 days.",
+      "Review federal, state, and local hot opportunities scored for my firm. List the top 5 with [[opp:id|title]] links, go/no-go rationale, and deadlines in the next 14 days.",
   },
   {
     title: "Find my next capture targets",
     prompt:
-      "Generate a shortlist of the highest-value pursuits for DFEAL this month. Use [[opp:id|title]] for each recommendation and note set-aside, NAICS fit, and teaming needs.",
+      "Generate a shortlist of the highest-value pursuits for my firm this month. Use [[opp:id|title]] for each recommendation and note set-aside, NAICS fit, and teaming needs.",
   },
   {
     title: "Pursuit pipeline review",

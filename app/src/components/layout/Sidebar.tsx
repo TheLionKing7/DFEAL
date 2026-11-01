@@ -4,11 +4,13 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useAssistant } from "@/components/assistant/AssistantContext";
 import { SidebarNavGroup } from "@/components/layout/SidebarNavGroup";
-import { SMART_CAPTURE, TENANT } from "@/config/platform";
+import { SMART_CAPTURE } from "@/config/platform";
+import { useFirm } from "@/components/firm/FirmProvider";
 import { NAV_GROUPS } from "@/shared/nav-groups";
 import { cn } from "@/shared/cn";
 
 export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const firm = useFirm();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const lane = searchParams.get("lane") ?? "";
@@ -37,7 +39,7 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
               <p className="text-[10px] leading-tight text-sidebar-muted">
                 {SMART_CAPTURE.tagline}
               </p>
-              <p className="mt-1.5 text-[11px] font-medium text-gold/90">{TENANT.legalName}</p>
+              <p className="mt-1.5 text-[11px] font-medium text-gold/90">{firm.legalName}</p>
             </Link>
             <button
               type="button"
@@ -60,7 +62,7 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
             className="flex w-full items-center gap-2 rounded-md bg-gold/15 px-3 py-2 text-left text-[13px] font-medium text-gold hover:bg-gold/20"
           >
             <span className="text-base">✦</span>
-            {TENANT.assistantName}
+            {firm.assistantName}
           </button>
         </div>
 
@@ -85,18 +87,26 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
         </nav>
 
         <div className="space-y-1 border-t border-white/10 p-2">
-          <Link
-            href="/settings"
-            onClick={onNavigate}
-            className={cn(
-              "block rounded-md px-3 py-1.5 text-[13px]",
-              pathname === "/settings"
-                ? "bg-gold/15 text-gold"
-                : "text-sidebar-muted hover:bg-white/5 hover:text-white",
-            )}
-          >
-            Settings
-          </Link>
+          {[
+            { href: "/settings", label: "Firm profile & settings", show: true },
+            { href: "/admin/firms", label: "Platform admin · Firms", show: firm.isPlatformAdmin },
+          ]
+            .filter((l) => l.show)
+            .map((l) => (
+              <Link
+                key={l.href}
+                href={l.href}
+                onClick={onNavigate}
+                className={cn(
+                  "block rounded-md px-3 py-1.5 text-[13px]",
+                  pathname === l.href || pathname.startsWith(`${l.href}/`)
+                    ? "bg-gold/15 text-gold"
+                    : "text-sidebar-muted hover:bg-white/5 hover:text-white",
+                )}
+              >
+                {l.label}
+              </Link>
+            ))}
           <p className="px-3 py-1 text-[9px] leading-snug text-sidebar-muted">
             {SMART_CAPTURE.copyright}
             <br />

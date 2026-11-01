@@ -27,7 +27,7 @@
 ## 4. Past performance
 
 - Similar contracts (agency, value, scope, results)
-- Healthcare / research / program management parallels
+- Relevant past performance parallels to this requirement
 
 ## 5. Socioeconomic / size status
 

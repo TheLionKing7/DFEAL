@@ -1,7 +1,7 @@
 import { createSamGovClient } from "@/lib/sam-gov/client";
 import { normalizeSamOpportunity } from "@/lib/sam-gov/normalize";
 import { upsertOpportunities, updateIngestCursor } from "@/lib/db/opportunities";
-import { getDfealNaicsCodes } from "@/config/dfeal-profile";
+import { loadIngestProfile } from "@/lib/firms/ingest-profile";
 import type { Opportunity } from "@/shared/types/opportunity";
 
 export interface SamIngestResult {
@@ -12,6 +12,7 @@ export interface SamIngestResult {
 
 export async function ingestSamOpportunities(
   daysBack = 30,
+  naicsOverride?: string[],
 ): Promise<SamIngestResult> {
   await updateIngestCursor("sam", {
     last_status: "running",
@@ -20,7 +21,7 @@ export async function ingestSamOpportunities(
 
   try {
     const client = createSamGovClient();
-    const naicsCodes = getDfealNaicsCodes();
+    const naicsCodes = naicsOverride ?? (await loadIngestProfile()).naicsCodes;
     const seenNoticeIds = new Set<string>();
     const seenSourceUrls = new Set<string>();
     const merged: Opportunity[] = [];

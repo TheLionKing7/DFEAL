@@ -1,9 +1,9 @@
 /**
- * DFEAL brand style system for professional document generation.
+ * Smart Capture document style system for professional document generation.
  * Shared across PDF and DOCX renderers for visual consistency.
  */
 
-export const DFEAL_STYLES = {
+export const DOCUMENT_STYLES = {
   brand: {
     navy: "#0f2744",
     gold: "#c9a227",
@@ -56,6 +56,18 @@ export interface DocumentMeta {
   responseDeadline?: string;
   setAside?: string;
   naics?: string;
+}
+
+/** Firm identity printed on the cover page and footer. */
+export interface DocumentBranding {
+  legalName: string;
+  website?: string | null;
+  phone?: string | null;
+  address?: string | null;
+}
+
+export function brandingContactLine(b: DocumentBranding): string {
+  return [b.website, b.phone, b.address].filter(Boolean).join(" · ");
 }
 
 export function sanitizeFilename(name: string): string {

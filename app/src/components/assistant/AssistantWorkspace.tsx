@@ -6,7 +6,7 @@ import { ChatMessageContent } from "@/components/assistant/ChatMessageContent";
 import { InlineAnalysisPanel } from "@/components/assistant/InlineAnalysisPanel";
 import { useAssistant } from "@/components/assistant/AssistantContext";
 import { usePageContext } from "@/components/assistant/PageContextProvider";
-import { TENANT } from "@/config/platform";
+import { useFirm } from "@/components/firm/FirmProvider";
 import { useOpportunityLists } from "@/hooks/useOpportunityLists";
 import { ASSISTANT_PROMPTS } from "@/shared/nav-groups";
 import { cn } from "@/shared/cn";
@@ -29,6 +29,7 @@ export function AssistantWorkspace({
   fullPage?: boolean;
   onClose?: () => void;
 }) {
+  const firm = useFirm();
   const { closeAssistant, initialQuery, newChat } = useAssistant();
   const { pageContext } = usePageContext();
   const { trackItems, favoriteItems, refresh: refreshLists } = useOpportunityLists();
@@ -188,7 +189,7 @@ export function AssistantWorkspace({
                 How can I help with capture today?
               </h2>
               <p className="mx-auto mt-2 max-w-lg text-center text-sm text-text-muted">
-                Professional, context-aware intelligence for {TENANT.legalName}. Every opportunity I
+                Professional, context-aware intelligence for {firm.legalName}. Every opportunity I
                 mention is clickable — hover for pursuit, track, favourite, or analyze.
               </p>
 
@@ -297,7 +298,7 @@ export function AssistantWorkspace({
             </button>
           </form>
           <p className="mx-auto mt-2 max-w-3xl text-center text-[10px] text-text-muted">
-            {TENANT.assistantName} can make mistakes. Verify important capture decisions.
+            {firm.assistantName} can make mistakes. Verify important capture decisions.
           </p>
         </footer>
 

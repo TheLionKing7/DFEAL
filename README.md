@@ -1,135 +1,111 @@
-# Smart Capture — DFEAL LLC
+# Smart Capture
 
-Internal AI capture platform for **DFEAL LLC**: federal and SLED contract intelligence, go/no-go analysis, proposal generation, compliance checks, and an integrated capture assistant.
+Multi-tenant AI capture platform for government contractors: federal + SLED
+opportunity ingest, per-firm fit scoring, go/no-go analysis, proposal
+generation, compliance checks, and a capture assistant.
 
-**Production:** [https://dfeal.vercel.app](https://dfeal.vercel.app) · App root: `app/` · Deployed via Vercel
+Every firm onboarded gets its own NAICS codes, industry, scoring rules, AI
+context, documents, pursuits, team, and daily digest. Opportunities are ingested
+once for the whole platform and scored separately for each firm.
 
-Run locally:
+App root: `app/` (Next.js 16, deployed on Vercel) · Database: Supabase (`supabase/migrations`)
 
 ```bash
-cd app && npm install && npm run dev
+cd app && cp .env.example .env.local   # fill in values
+npm install && npm run dev
 ```
 
 ---
 
-## Current status (June 2026)
+## How multi-tenancy works
 
-The live app is **past Phase 0** and **operational for daily capture work**. Phases overlap in the codebase — some Phase 3/4 items were built early (grants, DemandStar, assistant UX).
+| Concept | Where |
+|---|---|
+| **Firm** (tenant) — legal name, UEI/CAGE, industry, primary + secondary NAICS, keywords, set-asides, home/target states, capability narrative, past performance, go/no-go rules, digest recipients | `firms` table · `src/lib/firms/` |
+| **Membership** — who can use a firm's workspace (`owner` / `admin` / `member`) | `firm_members` table |
+| **Platform admins** — onboard/suspend firms, open any workspace | `PLATFORM_ADMIN_EMAILS` env var |
+| **Active firm** per request | `resolveFirmContext()` in `src/lib/firms/context.ts` (cookie `sc_firm` → first membership → auto-join by email domain) |
+| **Scoping** | Every tenant table has `firm_id`; every API route uses `requireFirmApi()`; RLS mirrors it as defence in depth |
+| **Scoring** | `scoreOpportunity(opp, firm)` — NAICS match vs. the firm's codes, keyword/competency fit, home/target state, set-aside, deadline, value, agency rules |
+| **Ingest** | SAM.gov is queried for the union of all active firms' NAICS; SLED/grants are filtered by the union of their keywords (`src/lib/firms/ingest-profile.ts`) |
+| **NAICS reference** | Full NAICS 2022 list (1,012 codes) in `src/lib/naics/` — every code entered is validated |
+| **Industry presets** | `src/lib/firms/industries.ts` — 16 industries that pre-fill suggested NAICS, keywords and competencies |
 
-| Phase | Focus | Progress | Summary |
-|-------|--------|----------|---------|
-| **0** | Foundation | **Done** | Next.js app, Supabase schema, DFEAL profile, design tokens, auth |
-| **1** | Federal core + daily surfacing | **~90%** | SAM ingest, scoring, Explore, workspace analyzer, watchlist, email digest, entity lookup API |
-| **2** | AI documents & compliance | **~65%** | Document generator, compliance validator, full assistant workspace; export/report polish incomplete |
-| **3** | SLED expansion | **~70%** | DemandStar, IL (BidBuy, Bonfire, education, state univ), Georgia live; Ohio stub |
-| **4** | Intelligence & automation | **~30%** | Grants.gov + SBA ingest, briefing page, automations UI; no runner, no USAspending CRM |
+### Onboarding a firm
 
-### What works today
+**In the app (recommended).** Sign in as a platform admin → sidebar **Platform admin · Firms** → **+ Onboard firm**.
+1. Pick an industry — suggested NAICS codes, keywords and competencies are pre-filled.
+2. Search/add NAICS codes (by code or keyword) and choose the primary.
+3. Set set-asides, home/target states, go/no-go rules, capability narrative and past performance.
+4. Add the owner's email and the firm's email domain(s) for auto-join.
+5. Save → the firm is created, the owner is emailed an invite, and the current opportunity pool is scored for the firm immediately.
 
-- **Federal:** SAM.gov ingest (~190+ notices), rule-based DFEAL scoring, hot feed, opportunity workspace (analyze, summarize, pursuits)
-- **SLED:** BidBuy IL, Bonfire, Georgia GPR, IL education bulletins, Illinois higher-ed; **DemandStar (Euna OpenBids)** with live ingest (~129 opps in test)
-- **Grants:** Grants.gov + SBA programs/events
-- **Daily pipeline:** Cron ingest → score → Resend email digest
-- **Assistant:** Chat sessions, briefing page, track/favourite lists, settings (connectors, personalization, instructions, memories)
-- **Entity lookup:** SAM Entity API wired; honest fallback when UEI/CAGE not found in SAM
+**From the CLI.** `cd app && npm run firm:onboard -- ../supabase/seed/example-firm.json owner@firm.com`
 
-### Remaining work (by priority)
+**Self-serve.** Set `ALLOW_SELF_SIGNUP=1` and any signed-in user without a firm is sent to `/onboarding` to create their own.
 
-**Phase 1 — finish launch**
+Firm admins manage their profile, NAICS, scoring rules and team under **Firm profile & settings**. Saving re-scores the feed.
 
-- [ ] Confirm **correct UEI/CAGE** in `app/src/config/dfeal-profile.ts` (SAM returns 0 records for `G1XCPA2ANMC3` / `15RT3` as of June 2026)
-- [ ] Run Supabase migrations on production if not done:
-  - `supabase/migrations/20250608100000_phase1_connectors.sql`
-  - `supabase/migrations/20250608100100_phase1_connectors_cursors.sql`
-  - `supabase/migrations/20250609100000_assistant_workspace.sql`
-- [ ] Add `DEMANDSTAR_USERNAME` / `DEMANDSTAR_PASSWORD` to **Vercel** env (local ingest tested)
-- [ ] Reports pages (`/reports/digest`, `/reports/pipeline`, `/reports/scoring`) — still placeholder
-- [ ] Opportunity detail tabs: Contacts · Similar · Files · Updates as first-class data
-- [ ] Slack digest (optional; email works)
+### Sign-in
 
-**Phase 2 — documents & compliance**
-
-- [ ] Production-grade PDF/DOCX export pipeline
-- [ ] Solicitation attachment ingest for compliance (Section L/M parsing)
-- [ ] DFEAL redacted proposal templates in `/files/templates`
-
-**Phase 3 — SLED**
-
-- [ ] **OhioBuys** connector (credentials + ingest not implemented)
-- [ ] Lane data quality at scale (DemandStar keyword filter may need tuning / `DEMANDSTAR_STATES=IL`)
-- [ ] DB cleanup for duplicate SAM rows (UI dedupes; no migration yet)
-
-**Phase 4 — intelligence & automation**
-
-- [ ] **Automation runner** (WhatsApp / approve→draft — UI + DB only today)
-- [ ] USAspending on agency pages
-- [ ] Pipeline CRM depth, amendment tracking
-- [ ] Richer agent tool-calling over full opportunity DB
+Magic links are issued by `POST /api/auth/magic-link` only to emails that are a firm member, match a firm's auto-join domain, are platform admins, or when self-signup is on. Everyone else gets the same generic response (no account enumeration).
 
 ---
+
+## Deployment
+
+1. **Migrations** — apply everything in `supabase/migrations` (`supabase db push`). `20261031000000_multi_tenant_firms.sql` creates `firms`/`firm_members`, adds `firm_id` everywhere, seeds **DFEAL** as the first firm, backfills all existing rows and users to it, and replaces the permissive RLS policies. It is idempotent.
+2. **Env vars** (Vercel) — see `app/.env.example`. New: `PLATFORM_ADMIN_EMAILS`, optional `ALLOW_SELF_SIGNUP`. Removed: `ALLOWED_EMAIL_DOMAIN`, `NEXT_PUBLIC_ALLOWED_EMAIL_DOMAIN`, `DIGEST_EMAIL_TO` (now per-firm).
+3. **Supabase Auth** — add `https://<your-domain>/auth/callback` to the redirect allow-list; configure SMTP so invite/magic-link emails come from your domain.
+4. **Cron** — `POST /api/cron/daily-opportunities` with `Authorization: Bearer $CRON_SECRET` once a day. It ingests, archives, scores every active firm, and emails each firm's digest.
+5. **Health** — `GET /api/cron/health` is a public liveness probe; send the cron secret for full diagnostics.
+
+## Commands (`app/`)
+
+```bash
+npm run dev            # local dev
+npm run check          # typecheck + lint + unit tests
+npm run build
+npm run pipeline       # full daily pipeline locally (-- --no-email to skip digests)
+npm run ingest         # ingest all sources + re-score every firm
+npm run firm:onboard -- <firm.json> [owner-email]
+```
+
+CI (`.github/workflows/ci.yml`) runs typecheck, lint, tests and build, and applies all migrations twice against Postgres 16 to prove they are idempotent.
 
 ## Repository layout
 
 ```
-DFEAL/
-├── app/                          ← Next.js 16 app (production code)
-│   ├── src/app/                  ← routes + API (cron, assistant, entity, …)
-│   ├── src/lib/                  ← ingest, scoring, connectors, AI
-│   └── src/config/dfeal-profile.ts
-├── supabase/migrations/          ← Postgres schema
-└── us-contractor-platform/       ← original scope docs, types, design reference
+├── app/                         Next.js app
+│   ├── src/app/(platform)/      firm workspace (explore, opportunities, pursuits, settings…)
+│   ├── src/app/admin/           platform-admin firm management
+│   ├── src/app/onboarding/      firm onboarding wizard
+│   ├── src/app/api/             route handlers (all firm-scoped)
+│   ├── src/lib/firms/           firm model, context, validation, industries, prompts
+│   ├── src/lib/naics/           NAICS 2022 reference data
+│   ├── src/lib/scoring/         per-firm fit scoring
+│   ├── src/lib/{ingest,sled,grants,sam-gov}/  source connectors
+│   ├── scripts/                 ops CLIs (scripts/research = archived probes, not built)
+│   └── templates/               proposal outlines ({{LEGAL_NAME}}, {{SHORT_NAME}}, …)
+├── supabase/migrations/         Postgres schema
+├── supabase/seed/               example firm JSON
+├── client-assets/               firm-supplied reference docs (not served)
+└── us-contractor-platform/      original scope docs
 ```
-
----
-
-## Environment (app/.env.local)
-
-See `app/.env.example`. Minimum for full operation:
-
-| Variable | Purpose |
-|----------|---------|
-| `SAM_GOV_API_KEY` | SAM opportunities + entity API |
-| `NEXT_PUBLIC_SUPABASE_URL` / keys | Auth + database |
-| `ANTHROPIC_API_KEY` or `GROQ_API_KEY` | Assistant + analyzer |
-| `CRON_SECRET` | Daily ingest cron |
-| `RESEND_API_KEY` / `DIGEST_EMAIL_TO` | Email digest |
-| `SLED_INGEST_ENABLED=1` | SLED daily ingest |
-| `GRANTS_INGEST_ENABLED=1` | Grants daily ingest |
-| `DEMANDSTAR_USERNAME` / `PASSWORD` | OpenBids SLED connector |
-
----
-
-## Useful commands
-
-```bash
-cd app
-npm run dev
-npm run build
-npx tsx scripts/test-demandstar-ingest.ts          # DemandStar fetch test
-npx tsx scripts/test-demandstar-ingest.ts --upsert # DemandStar + DB upsert
-npx tsx scripts/probe-sam-dfeal.ts                 # SAM entity probe for DFEAL UEI/name
-```
-
----
-
-## Documentation
-
-| Doc | Path |
-|-----|------|
-| Original scope & phase plan | [us-contractor-platform/README.md](us-contractor-platform/README.md) |
-| Client scope | [us-contractor-platform/docs/CLIENT-SCOPE.md](us-contractor-platform/docs/CLIENT-SCOPE.md) |
-| Architecture | [us-contractor-platform/docs/ARCHITECTURE.md](us-contractor-platform/docs/ARCHITECTURE.md) |
-| SLED connectors | [us-contractor-platform/docs/SLED-CONNECTORS.md](us-contractor-platform/docs/SLED-CONNECTORS.md) |
-| DFEAL profile checklist | [us-contractor-platform/docs/DFEAL-COMPANY-PROFILE.md](us-contractor-platform/docs/DFEAL-COMPANY-PROFILE.md) |
-
----
 
 ## Live connectors
 
 | Source | Status |
-|--------|--------|
+|---|---|
 | SAM.gov | Live |
 | Grants.gov, SBA | Live |
 | DemandStar (OpenBids) | Live (credentials required) |
 | BidBuy IL, Bonfire, Georgia, IL education, State Univ IL | Live |
-| Ohio, DemandStar lanes without creds | Stub / credentials required |
+| OhioBuys | Stub |
+
+## Known follow-ups
+
+- SLED connectors are still Illinois/Georgia-centric; firms in other states rely on SAM, grants and DemandStar until more state portals are added.
+- Rate limiting on AI routes is per-instance (in memory); put Vercel WAF or Upstash in front for strict global limits.
+- Firm-supplied files (`client-assets/`) should move to per-firm Supabase Storage.
+- Reports pages (`/reports/*`) and the automation runner are still placeholders.
