@@ -41,6 +41,19 @@ export async function updateSession(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
 
+  // Supabase falls back to the Site URL root (e.g. "/?code=…") when the
+  // requested redirect is not on its allow-list. Route any stray auth code
+  // through the callback so the session is still established.
+  const authCode = request.nextUrl.searchParams.get("code");
+  if (authCode && pathname !== "/auth/callback" && !pathname.startsWith("/api/")) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/auth/callback";
+    url.search = "";
+    url.searchParams.set("code", authCode);
+    url.searchParams.set("next", pathname === "/" || pathname === "/login" ? "/explore" : pathname);
+    return NextResponse.redirect(url);
+  }
+
   if (!user && !isPublicPath(pathname)) {
     if (pathname.startsWith("/api/")) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
