@@ -3,6 +3,7 @@ import type { FirmProfile } from "@/lib/firms/types";
 import { llmComplete } from "@/lib/ai/complete";
 import { saveDocument } from "@/lib/db/documents";
 import { getFilledTemplate } from "@/lib/documents/template-loader";
+import { buildDraftingReferences } from "@/lib/documents/reference";
 import { sanitizeMarkdownOutput } from "@/lib/export/markdown";
 import { getDocumentTypeLabel, type DocumentType } from "@/shared/document-types";
 import type { Opportunity } from "@/shared/types/opportunity";
@@ -93,6 +94,9 @@ export async function generateProposalDocument(input: {
     .filter(Boolean)
     .join("\n");
 
+  // The firm's own reference documents set voice, structure and facts.
+  const references = await buildDraftingReferences(firm.id, documentType).catch(() => ({ block: "", used: [] }));
+
   const userPrompt = [
     `Draft a complete, submission-ready ${label} for ${firm.legalName}.`,
     "",
@@ -100,6 +104,16 @@ export async function generateProposalDocument(input: {
     templateOutline,
     "",
     oppContext,
+    references.block
+      ? [
+          "",
+          "=== FIRM REFERENCE DOCUMENTS (the firm's own past work) ===",
+          "Match their tone, terminology, section depth and formatting conventions. Facts in these documents",
+          "(contracts, staff, certifications, metrics) are authoritative and may be reused; do not copy text verbatim",
+          "unless it is boilerplate (company overview, contact block). Never mention that you used reference documents.",
+          references.block,
+        ].join("\n")
+      : "",
     "",
     "=== DRAFTING RULES ===",
     draftingRules(firm),
@@ -131,5 +145,5 @@ export async function generateProposalDocument(input: {
     created_by: userEmail,
   });
 
-  return { document: doc, provider };
+  return { document: doc, provider, references: references.used };
 }

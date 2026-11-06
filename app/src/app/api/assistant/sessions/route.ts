@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getChatMessages, listChatSessions, updateChatSessionTitle } from "@/lib/db/chat";
+import { deleteChatSession, getChatMessages, listChatSessions, updateChatSessionTitle } from "@/lib/db/chat";
 import { requireFirmApi } from "@/lib/firms/context";
 import { badRequest, readJson, serverError } from "@/lib/http/json";
 
@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     if (sessionId) {
       return NextResponse.json({ messages: await getChatMessages(scope, sessionId) });
     }
-    return NextResponse.json({ sessions: await listChatSessions(scope, 30) });
+    return NextResponse.json({ sessions: await listChatSessions(scope, 100) });
   } catch (error) {
     return serverError("api.sessions.get_failed", error);
   }
@@ -35,5 +35,18 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ ok: true });
   } catch (error) {
     return serverError("api.sessions.patch_failed", error);
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  const ctx = await requireFirmApi();
+  if (ctx instanceof NextResponse) return ctx;
+  const id = request.nextUrl.searchParams.get("session_id");
+  if (!id) return badRequest("session_id required");
+  try {
+    await deleteChatSession({ firmId: ctx.firm.id, userEmail: ctx.user.email }, id);
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    return serverError("api.sessions.delete_failed", error);
   }
 }

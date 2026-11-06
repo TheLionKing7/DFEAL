@@ -8,6 +8,8 @@ function isPublicPath(pathname: string): boolean {
   if (PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))) return true;
   // Cron routes authenticate with CRON_SECRET instead of a session.
   if (pathname.startsWith("/api/cron/")) return true;
+  // Token-authenticated calendar feeds (calendar apps send no cookies).
+  if (pathname.startsWith("/api/calendar/")) return true;
   return false;
 }
 

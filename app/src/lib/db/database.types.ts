@@ -65,6 +65,124 @@ export type FirmRow = {
   allowed_email_domains: string[];
   digest_recipients: string[];
   created_by: string | null;
+  entity_type: string | null;
+  employee_range: string | null;
+  dba_name: string | null;
+  workspace: Json;
+  onboarded_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+type TableDef<R, I> = { Row: R; Insert: I; Update: Partial<R>; Relationships: [] };
+
+export type UserProfileRow = {
+  email: string;
+  user_id: string | null;
+  full_name: string | null;
+  job_title: string | null;
+  phone: string | null;
+  timezone: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type FirmInvitationRow = {
+  id: string;
+  email: string;
+  company_name: string | null;
+  note: string | null;
+  status: string;
+  invited_by: string;
+  firm_id: string | null;
+  expires_at: string;
+  accepted_at: string | null;
+  created_at: string;
+};
+
+export type AssistantMemoryRow = {
+  id: string;
+  firm_id: string;
+  user_email: string;
+  scope: string;
+  category: string;
+  content: string;
+  opportunity_id: string | null;
+  source: string;
+  pinned: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ConnectorRow = {
+  id: string;
+  firm_id: string;
+  type: string;
+  name: string;
+  config: Json;
+  secret_enc: string | null;
+  status: string;
+  last_tested_at: string | null;
+  last_error: string | null;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AutomationRunRow = {
+  id: string;
+  automation_id: string;
+  firm_id: string;
+  trigger: string;
+  status: string;
+  matched: number;
+  actions_ok: number;
+  actions_failed: number;
+  log: Json;
+  started_at: string;
+  finished_at: string | null;
+};
+
+export type AutomationEventRow = {
+  id: string;
+  automation_id: string;
+  firm_id: string;
+  opportunity_id: string;
+  kind: string;
+  status: string;
+  fit_score: number | null;
+  ai_summary: string | null;
+  results: Json;
+  created_at: string;
+  resolved_at: string | null;
+};
+
+export type DailyBriefingRow = {
+  id: string;
+  firm_id: string;
+  briefing_date: string;
+  content: Json;
+  ai_summary: string | null;
+  provider: string | null;
+  emailed_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type FirmDocumentRow = {
+  id: string;
+  firm_id: string;
+  title: string;
+  doc_type: string;
+  storage_path: string | null;
+  file_name: string | null;
+  mime_type: string | null;
+  size_bytes: number | null;
+  extracted_text: string | null;
+  char_count: number;
+  use_for_drafting: boolean;
+  notes: string | null;
+  uploaded_by: string;
   created_at: string;
   updated_at: string;
 };
@@ -79,6 +197,40 @@ export interface Database {
         Update: Partial<FirmRow>;
         Relationships: [];
       };
+      user_profiles: TableDef<UserProfileRow, Partial<UserProfileRow> & { email: string }>;
+      firm_invitations: TableDef<
+        FirmInvitationRow,
+        Partial<FirmInvitationRow> & { email: string; invited_by: string }
+      >;
+      assistant_memories: TableDef<
+        AssistantMemoryRow,
+        Partial<AssistantMemoryRow> & { firm_id: string; user_email: string; content: string }
+      >;
+      connectors: TableDef<
+        ConnectorRow,
+        Partial<ConnectorRow> & { firm_id: string; type: string; name: string; created_by: string }
+      >;
+      automation_runs: TableDef<
+        AutomationRunRow,
+        Partial<AutomationRunRow> & { automation_id: string; firm_id: string }
+      >;
+      automation_events: TableDef<
+        AutomationEventRow,
+        Partial<AutomationEventRow> & {
+          automation_id: string;
+          firm_id: string;
+          opportunity_id: string;
+          kind: string;
+        }
+      >;
+      daily_briefings: TableDef<
+        DailyBriefingRow,
+        Partial<DailyBriefingRow> & { firm_id: string; briefing_date: string; content: Json }
+      >;
+      firm_documents: TableDef<
+        FirmDocumentRow,
+        Partial<FirmDocumentRow> & { firm_id: string; title: string; uploaded_by: string }
+      >;
       firm_members: {
         Row: {
           id: string;
@@ -347,6 +499,9 @@ export interface Database {
       };
       user_automations: {
         Row: {
+          last_run_at: string | null;
+          last_run_status: string | null;
+          last_run_summary: string | null;
           firm_id: string;
           id: string;
           user_email: string;
@@ -358,6 +513,9 @@ export interface Database {
           updated_at: string;
         };
         Insert: {
+          last_run_at?: string | null;
+          last_run_status?: string | null;
+          last_run_summary?: string | null;
           firm_id: string;
           user_email: string;
           name: string;

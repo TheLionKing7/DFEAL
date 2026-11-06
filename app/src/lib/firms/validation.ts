@@ -63,6 +63,16 @@ export const goNoGoSchema = z.object({
   minDaysToDeadline: z.number().int().min(0).max(120).default(5),
 });
 
+export { EMPLOYEE_RANGES, ENTITY_TYPES } from "@/lib/firms/validation-options";
+
+export const workspaceSchema = z.object({
+  stateScope: z.enum(["all", "selected", "home_only"]).default("selected"),
+  local: z.boolean().default(true),
+  education: z.boolean().default(true),
+  grants: z.boolean().default(true),
+  briefingEmail: z.boolean().default(true),
+});
+
 export const firmInputSchema = z
   .object({
     slug: z
@@ -97,6 +107,10 @@ export const firmInputSchema = z
     assistantName: optionalText(60),
     allowedEmailDomains: z.array(emailDomain).max(10).default([]),
     digestRecipients: z.array(z.string().trim().toLowerCase().email()).max(25).default([]),
+    dbaName: optionalText(200),
+    entityType: optionalText(60),
+    employeeRange: optionalText(20),
+    workspace: workspaceSchema.default({}),
   })
   .transform((input) => {
     const naicsCodes = [...new Set([input.primaryNaics, ...input.naicsCodes])];

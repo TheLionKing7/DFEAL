@@ -38,6 +38,11 @@ export default function DocumentsPage() {
       <PageHeader
         title="Documents"
         description="AI-generated capability statements, RFI responses, and proposals saved from opportunity workspaces."
+        actions={
+          <a href="/settings?tab=documents" className="rounded-lg border border-border px-3 py-2 text-xs hover:border-gold">
+            Reference documents for drafting →
+          </a>
+        }
       />
 
       {loading && <p className="text-sm text-text-muted">Loading…</p>}

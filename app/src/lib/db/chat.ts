@@ -103,3 +103,13 @@ export async function updateChatSessionTitle(scope: ChatScope, sessionId: string
     .eq("user_email", scope.userEmail);
   if (error) throw new Error(error.message);
 }
+
+export async function deleteChatSession(scope: ChatScope, sessionId: string) {
+  const { error } = await getSupabaseAdmin()
+    .from("chat_sessions")
+    .delete()
+    .eq("id", sessionId)
+    .eq("firm_id", scope.firmId)
+    .eq("user_email", scope.userEmail);
+  if (error) throw new Error(error.message);
+}

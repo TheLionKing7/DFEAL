@@ -1,4 +1,4 @@
-import { OPPORTUNITY_LANES } from "@/shared/opportunity-lanes";
+import { workspaceLanes, type LaneFirm } from "@/lib/firms/lanes";
 
 export interface NavItem {
   href: string;
@@ -12,59 +12,57 @@ export interface NavGroup {
   items: NavItem[];
 }
 
-export const NAV_GROUPS: NavGroup[] = [
-  {
-    id: "opportunities",
-    label: "Opportunities",
-    items: [
-      { href: "/explore", label: "Hot feed" },
-      { href: "/opportunities", label: "All federal" },
-      ...OPPORTUNITY_LANES.filter((l) => l.phase <= 3)
-        .map((l) => ({
-        href: l.href,
-        label: l.label,
-        lane: l.id,
-      })),
-    ],
-  },
-  {
-    id: "capture",
-    label: "Capture workspace",
-    items: [
-      { href: "/watchlist", label: "Pursuits" },
-      { href: "/automations", label: "Automations" },
-      { href: "/documents", label: "Document generator" },
-      { href: "/entity", label: "SAM entity lookup" },
-    ],
-  },
-  {
-    id: "reports",
-    label: "Reports",
-    items: [
-      { href: "/briefing", label: "Daily briefing" },
-      { href: "/reports/digest", label: "Daily digest" },
-      { href: "/reports/pipeline", label: "Pipeline summary" },
-      { href: "/reports/scoring", label: "Scoring analytics" },
-    ],
-  },
-  {
-    id: "participants",
-    label: "Participants",
-    items: [
-      { href: "/agencies", label: "Federal agencies" },
-      { href: "/entity", label: "SAM registration" },
-      { href: "/participants/vendors", label: "Teaming vendors" },
-    ],
-  },
-  {
-    id: "files",
-    label: "Files",
-    items: [
-      { href: "/documents", label: "Generated proposals" },
-      { href: "/files/templates", label: "Proposal templates" },
-    ],
-  },
-];
+/** Sidebar navigation for a workspace — opportunity lanes follow the firm's workspace settings. */
+export function buildNavGroups(firm: LaneFirm): NavGroup[] {
+  return [
+    {
+      id: "opportunities",
+      label: "Opportunities",
+      items: [
+        { href: "/explore", label: "Hot feed" },
+        ...workspaceLanes(firm).map((l) => ({ href: l.href, label: l.label, lane: l.id })),
+      ],
+    },
+    {
+      id: "capture",
+      label: "Capture workspace",
+      items: [
+        { href: "/watchlist", label: "Pursuits" },
+        { href: "/lists/track", label: "Track list" },
+        { href: "/lists/favorite", label: "Favourites" },
+        { href: "/automations", label: "Automations" },
+        { href: "/documents", label: "Document generator" },
+        { href: "/entity", label: "SAM entity lookup" },
+      ],
+    },
+    {
+      id: "reports",
+      label: "Reports",
+      items: [
+        { href: "/briefing", label: "Daily briefing" },
+        { href: "/reports/digest", label: "Daily digest" },
+        { href: "/reports/pipeline", label: "Pipeline summary" },
+        { href: "/reports/scoring", label: "Scoring analytics" },
+      ],
+    },
+    {
+      id: "participants",
+      label: "Participants",
+      items: [
+        { href: "/agencies", label: "Federal agencies" },
+        { href: "/participants/vendors", label: "Teaming vendors" },
+      ],
+    },
+    {
+      id: "files",
+      label: "Files",
+      items: [
+        { href: "/documents", label: "Generated proposals" },
+        { href: "/files/templates", label: "Proposal templates" },
+      ],
+    },
+  ];
+}
 
 export const ASSISTANT_PROMPTS = [
   {

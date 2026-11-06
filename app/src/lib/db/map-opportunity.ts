@@ -3,7 +3,7 @@ import { governmentTypeToMarketTier } from "@/lib/sled/normalize";
 import type { MarketTier, Opportunity } from "@/shared/types/opportunity";
 import type { DbOpportunity, HotOpportunity, Json } from "@/lib/db/database.types";
 
-function deriveMarketTier(opp: Opportunity): MarketTier {
+export function deriveMarketTier(opp: Opportunity): MarketTier {
   const rawTier = opp.raw_data?.market_tier;
   if (rawTier === "local" || rawTier === "education" || rawTier === "state") {
     return rawTier;

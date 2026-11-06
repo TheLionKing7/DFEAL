@@ -23,6 +23,30 @@ export interface GoNoGoRules {
 }
 
 export type FirmRole = "owner" | "admin" | "member";
+
+/** Which state opportunities a workspace sees beyond its home state. */
+export type StateScope = "all" | "selected" | "home_only";
+
+/**
+ * Workspace lanes. Federal (SAM.gov) is always on; the home state lane is on
+ * whenever a home state is set.
+ */
+export interface WorkspaceSettings {
+  stateScope: StateScope;
+  local: boolean;
+  education: boolean;
+  grants: boolean;
+  /** Email the daily briefing to digest recipients. */
+  briefingEmail: boolean;
+}
+
+export const DEFAULT_WORKSPACE: WorkspaceSettings = {
+  stateScope: "selected",
+  local: true,
+  education: true,
+  grants: true,
+  briefingEmail: true,
+};
 export type SamStatus = "active" | "expired" | "inactive" | "unknown";
 
 export interface FirmProfile {
@@ -32,6 +56,9 @@ export interface FirmProfile {
 
   legalName: string;
   shortName: string;
+  dbaName: string | null;
+  entityType: string | null;
+  employeeRange: string | null;
   uei: string | null;
   cage: string | null;
   duns: string | null;
@@ -67,6 +94,9 @@ export interface FirmProfile {
   allowedEmailDomains: string[];
   digestRecipients: string[];
 
+  workspace: WorkspaceSettings;
+  onboardedAt: string | null;
+
   createdAt: string;
   updatedAt: string;
 }
@@ -83,6 +113,9 @@ export interface FirmClientInfo {
   cage: string | null;
   industry: string;
   primaryNaics: string;
+  homeState: string | null;
+  targetStates: string[];
+  workspace: WorkspaceSettings;
   role: FirmRole;
   isPlatformAdmin: boolean;
 }
@@ -117,6 +150,9 @@ export function toFirmClientInfo(
     cage: firm.cage,
     industry: firm.industry,
     primaryNaics: firm.primaryNaics,
+    homeState: firm.homeState,
+    targetStates: firm.targetStates,
+    workspace: firm.workspace,
     role,
     isPlatformAdmin,
   };

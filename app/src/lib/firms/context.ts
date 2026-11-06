@@ -8,6 +8,7 @@ import { isDatabaseConfigured } from "@/lib/db/supabase-admin";
 import {
   findFirmsByEmailDomain,
   getFirmById,
+  linkMembershipsToUser,
   listMembershipsForEmail,
   upsertFirmMember,
   type FirmMembership,
@@ -83,6 +84,10 @@ export const resolveFirmContext = cache(async (): Promise<FirmContextResult> => 
       await upsertFirmMember(firm.id, user.email, "member", "domain-auto-join", user.id);
     }
     if (domainFirms.length) memberships = await listMembershipsForEmail(user.email);
+  }
+
+  if (memberships.some((m) => !m.userId)) {
+    await linkMembershipsToUser(user.email, user.id).catch(() => undefined);
   }
 
   const cookieStore = await cookies();

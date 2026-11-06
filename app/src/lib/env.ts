@@ -54,7 +54,8 @@ export function getAnthropicModel(): string {
 }
 
 export function getGroqModel(): string {
-  return optionalEnv("GROQ_MODEL") ?? "llama-3.3-70b-versatile";
+  // llama-3.3-70b-versatile was retired by Groq; gpt-oss-120b is the current general model.
+  return optionalEnv("GROQ_MODEL") ?? "openai/gpt-oss-120b";
 }
 
 export function getSamOpportunitiesUrl(): string {

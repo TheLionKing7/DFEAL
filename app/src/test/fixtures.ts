@@ -1,4 +1,4 @@
-import { DEFAULT_GO_NO_GO, type FirmProfile } from "@/lib/firms/types";
+import { DEFAULT_GO_NO_GO, DEFAULT_WORKSPACE, type FirmProfile } from "@/lib/firms/types";
 import type { Opportunity } from "@/shared/types/opportunity";
 
 export function makeFirm(overrides: Partial<FirmProfile> = {}): FirmProfile {
@@ -8,6 +8,9 @@ export function makeFirm(overrides: Partial<FirmProfile> = {}): FirmProfile {
     status: "active",
     legalName: "Acme Federal LLC",
     shortName: "Acme",
+    dbaName: null,
+    entityType: "Government contractor",
+    employeeRange: "11-50",
     uei: "ABCDEFGH1234",
     cage: "1A2B3",
     duns: null,
@@ -34,6 +37,8 @@ export function makeFirm(overrides: Partial<FirmProfile> = {}): FirmProfile {
     assistantName: "Acme's Assistant",
     allowedEmailDomains: ["acme.test"],
     digestRecipients: [],
+    workspace: { ...DEFAULT_WORKSPACE },
+    onboardedAt: "2026-01-01T00:00:00Z",
     createdAt: "2026-01-01T00:00:00Z",
     updatedAt: "2026-01-01T00:00:00Z",
     ...overrides,

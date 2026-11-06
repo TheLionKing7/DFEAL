@@ -1,5 +1,6 @@
 import type { Json } from "@/lib/db/database.types";
 import { getSupabaseAdmin } from "@/lib/db/supabase-admin";
+import { parseAutomationConfig, type AutomationConfig } from "@/lib/automations/schema";
 
 export type OpportunityListType = "track" | "favorite";
 
@@ -26,13 +27,10 @@ export interface UserAutomation {
   name: string;
   enabled: boolean;
   description: string | null;
-  config: {
-    trigger?: "new_hot_opportunity" | "deadline_approaching" | "manual";
-    whatsapp_number?: string;
-    require_approval?: boolean;
-    document_type?: string;
-    notify_email?: boolean;
-  };
+  config: AutomationConfig;
+  last_run_at: string | null;
+  last_run_status: string | null;
+  last_run_summary: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -198,7 +196,10 @@ export async function listAutomations(firmId: string, userEmail: string): Promis
     name: row.name,
     enabled: row.enabled,
     description: row.description,
-    config: (row.config as UserAutomation["config"]) ?? {},
+    config: parseAutomationConfig(row.config),
+    last_run_at: row.last_run_at ?? null,
+    last_run_status: row.last_run_status ?? null,
+    last_run_summary: row.last_run_summary ?? null,
     created_at: row.created_at,
     updated_at: row.updated_at,
   }));

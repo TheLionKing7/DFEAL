@@ -6,6 +6,8 @@ import {
   listActiveOpportunityIds,
   upsertOpportunityScores,
 } from "@/lib/db/opportunities";
+import { runDueAutomations } from "@/lib/automations/engine";
+import { getDailyBriefing, markBriefingEmailed } from "@/lib/briefing/build-briefing";
 import { sendDailyDigestEmail, type SendDailyDigestResult } from "@/lib/email/daily-digest";
 import { loadIngestProfile } from "@/lib/firms/ingest-profile";
 import { listFirms } from "@/lib/firms/repository";
@@ -38,6 +40,7 @@ export interface DailyPipelineResult {
   sled_ingest?: { total_fetched: number; total_upserted: number; sources: Record<string, unknown> };
   grants_ingest?: { total_fetched: number; total_upserted: number; sources: Record<string, unknown> };
   scoring: FirmScoringResult[];
+  automations?: Awaited<ReturnType<typeof runDueAutomations>>;
 }
 
 function errorMessage(error: unknown, fallback: string) {
@@ -111,12 +114,19 @@ export async function runDailyPipeline(options?: { sendEmail?: boolean }): Promi
       const row: FirmScoringResult = { firm_id: firm.id, firm: firm.slug, scored: 0, hot_count: 0 };
       try {
         Object.assign(row, await scoreForFirm(firm, opportunities, digestId));
+        // Fresh briefing for today, built from the new scores.
+        const briefing = await getDailyBriefing(firm, { regenerate: true }).catch((error) => {
+          logger.warn("daily_pipeline.briefing_failed", { firm: firm.slug, error: errorMessage(error, "Briefing failed") });
+          return null;
+        });
         if (sendEmail) {
           row.email = await sendDailyDigestEmail(firm, {
             hotCount: row.hot_count,
             scored: row.scored,
             ingested,
+            briefingPulse: firm.workspace.briefingEmail ? briefing?.industry_pulse : undefined,
           }).catch((error) => ({ sent: false, skipped_reason: errorMessage(error, "Email failed") }));
+          if (row.email?.sent && briefing) await markBriefingEmailed(firm.id).catch(() => undefined);
         }
       } catch (error) {
         row.error = errorMessage(error, "Scoring failed");
@@ -124,6 +134,12 @@ export async function runDailyPipeline(options?: { sendEmail?: boolean }): Promi
       }
       scoring.push(row);
     }
+
+    // Agents run on the freshly scored pool.
+    const automations = await runDueAutomations().catch((error) => {
+      logger.error("daily_pipeline.automations_failed", { error: errorMessage(error, "Automations failed") });
+      return [];
+    });
 
     await finishDigestRun(digestId, {
       status: "success",
@@ -142,6 +158,7 @@ export async function runDailyPipeline(options?: { sendEmail?: boolean }): Promi
       sled_ingest: sledIngest,
       grants_ingest: grantsIngest,
       scoring,
+      automations,
     };
   } catch (error) {
     const message = errorMessage(error, "Daily pipeline failed");

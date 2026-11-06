@@ -1,20 +1,22 @@
 "use client";
 
 import Link from "next/link";
+import { useMemo } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useAssistant } from "@/components/assistant/AssistantContext";
 import { SidebarNavGroup } from "@/components/layout/SidebarNavGroup";
 import { SMART_CAPTURE } from "@/config/platform";
 import { useFirm } from "@/components/firm/FirmProvider";
-import { NAV_GROUPS } from "@/shared/nav-groups";
+import { buildNavGroups } from "@/shared/nav-groups";
 import { cn } from "@/shared/cn";
 
 export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const firm = useFirm();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const lane = searchParams.get("lane") ?? "";
-  const { closeAssistant, openAssistant } = useAssistant();
+  const lane = searchParams.get("lane") ?? (pathname === "/opportunities" ? "federal" : "");
+  const { closeAssistant } = useAssistant();
+  const groups = useMemo(() => buildNavGroups(firm), [firm]);
 
   function onNavigate() {
     closeAssistant();
@@ -23,9 +25,7 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
 
   return (
     <>
-      {open && (
-        <div className="fixed inset-0 z-40 bg-black/40 lg:hidden" onClick={onClose} aria-hidden />
-      )}
+      {open && <div className="fixed inset-0 z-40 bg-black/40 lg:hidden" onClick={onClose} aria-hidden />}
       <aside
         className={cn(
           "fixed inset-y-0 left-0 z-50 flex w-[13.5rem] shrink-0 flex-col border-r border-sidebar-surface bg-sidebar text-white lg:static",
@@ -36,10 +36,8 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
           <div className="flex items-start justify-between gap-2">
             <Link href="/explore" onClick={onClose} className="min-w-0">
               <p className="text-sm font-bold tracking-wide">{SMART_CAPTURE.name}</p>
-              <p className="text-[10px] leading-tight text-sidebar-muted">
-                {SMART_CAPTURE.tagline}
-              </p>
-              <p className="mt-1.5 text-[11px] font-medium text-gold/90">{firm.legalName}</p>
+              <p className="text-[10px] leading-tight text-sidebar-muted">{SMART_CAPTURE.tagline}</p>
+              <p className="mt-1.5 truncate text-[11px] font-medium text-gold/90">{firm.legalName}</p>
             </Link>
             <button
               type="button"
@@ -52,22 +50,8 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
           </div>
         </div>
 
-        <div className="border-b border-white/10 px-2 py-2">
-          <button
-            type="button"
-            onClick={() => {
-              openAssistant({ newChat: true });
-              onClose();
-            }}
-            className="flex w-full items-center gap-2 rounded-md bg-gold/15 px-3 py-2 text-left text-[13px] font-medium text-gold hover:bg-gold/20"
-          >
-            <span className="text-base">✦</span>
-            {firm.assistantName}
-          </button>
-        </div>
-
         <nav className="flex-1 overflow-y-auto px-1 py-1">
-          {NAV_GROUPS.map((group) => (
+          {groups.map((group) => (
             <SidebarNavGroup
               key={group.id}
               group={group}
@@ -89,7 +73,7 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
         <div className="space-y-1 border-t border-white/10 p-2">
           {[
             { href: "/settings", label: "Firm profile & settings", show: true },
-            { href: "/admin/firms", label: "Platform admin · Firms", show: firm.isPlatformAdmin },
+            { href: "/admin/firms", label: "Platform admin", show: firm.isPlatformAdmin },
           ]
             .filter((l) => l.show)
             .map((l) => (
@@ -110,12 +94,7 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
           <p className="px-3 py-1 text-[9px] leading-snug text-sidebar-muted">
             {SMART_CAPTURE.copyright}
             <br />
-            <a
-              href={SMART_CAPTURE.parentUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="hover:text-white"
-            >
+            <a href={SMART_CAPTURE.parentUrl} target="_blank" rel="noreferrer" className="hover:text-white">
               {SMART_CAPTURE.parentCompany}
             </a>
           </p>

@@ -36,8 +36,10 @@ export function buildDailyDigestHtml(options: {
   opportunities: DigestOpportunity[];
   exploreUrl: string;
   firmName: string;
+  briefingPulse?: string;
+  briefingUrl?: string;
 }): string {
-  const { hotCount, scored, ingested, opportunities, exploreUrl, firmName } = options;
+  const { hotCount, scored, ingested, opportunities, exploreUrl, firmName, briefingPulse, briefingUrl } = options;
   const rows = opportunities
     .map((opp) => {
       const link = opp.sam_url
@@ -79,6 +81,15 @@ export function buildDailyDigestHtml(options: {
       <h1 style="margin:8px 0 0;font-size:22px">${escapeHtml(SMART_CAPTURE.name)} · ${escapeHtml(firmName)}</h1>
     </div>
     <div style="background:#fff;border:1px solid #e2e8f0;border-top:none;padding:24px;border-radius:0 0 12px 12px">
+      ${
+        briefingPulse
+          ? `<div style="margin:0 0 20px;padding:16px;border-left:4px solid #c9a84c;background:#fbf8ef;border-radius:8px">
+               <p style="margin:0 0 6px;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#a8862f">Today's briefing</p>
+               <p style="margin:0;line-height:1.55">${escapeHtml(briefingPulse)}</p>
+               ${briefingUrl ? `<p style="margin:10px 0 0"><a href="${escapeHtml(briefingUrl)}" style="color:#a8862f">Read the full briefing →</a></p>` : ""}
+             </div>`
+          : ""
+      }
       <p style="margin:0 0 16px">
         <strong>${hotCount}</strong> hot opportunities ·
         <strong>${scored}</strong> scored ·

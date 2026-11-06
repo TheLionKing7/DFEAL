@@ -1,19 +1,16 @@
 "use client";
 
-import { FirmForm, emptyFirmForm } from "@/components/firm/FirmForm";
+import { FirmForm } from "@/components/firm/FirmForm";
+import { emptyFirmForm } from "@/lib/firms/form-values";
 
-/** Create-mode firm form that opens the new workspace once onboarding succeeds. */
-export function OnboardFirmForm({ showOwnerEmail }: { showOwnerEmail: boolean }) {
+/** Platform-admin "create workspace directly" form (no invite). */
+export function OnboardFirmForm() {
   return (
     <FirmForm
       mode="create"
-      initial={emptyFirmForm()}
-      showOwnerEmail={showOwnerEmail}
-      onSaved={() => {
-        setTimeout(() => {
-          window.location.assign("/explore");
-        }, 1200);
-      }}
+      initial={{ ...emptyFirmForm() }}
+      sections={["owner", "identity", "industry", "workspace", "eligibility", "rules", "narrative", "notifications"]}
+      onSaved={() => setTimeout(() => window.location.assign("/explore"), 1200)}
     />
   );
 }

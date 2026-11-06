@@ -12,7 +12,7 @@ export default function LoginForm() {
   const rawNext = searchParams.get("next") || "/explore";
   const next = rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/explore";
   const callbackError = searchParams.get("error");
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(() => (searchParams.get("email") ?? "").slice(0, 254));
   const [password, setPassword] = useState("");
   const [mode, setMode] = useState<Mode>("magic");
   const [message, setMessage] = useState<string | null>(null);

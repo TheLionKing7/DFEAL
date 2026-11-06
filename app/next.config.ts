@@ -1,3 +1,4 @@
+import path from "node:path";
 import type { NextConfig } from "next";
 
 const securityHeaders = [
@@ -10,6 +11,8 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // The repo root also has a package-lock.json; pin the app root explicitly.
+  turbopack: { root: path.resolve(__dirname) },
   serverExternalPackages: ["pdfkit"],
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];

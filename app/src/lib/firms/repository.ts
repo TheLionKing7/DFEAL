@@ -2,7 +2,9 @@ import type { FirmRow, Json } from "@/lib/db/database.types";
 import { getSupabaseAdmin } from "@/lib/db/supabase-admin";
 import {
   DEFAULT_GO_NO_GO,
+  DEFAULT_WORKSPACE,
   type FirmProfile,
+  type WorkspaceSettings,
   type FirmRole,
   type GoNoGoRules,
   type PastPerformanceRecord,
@@ -17,6 +19,9 @@ export function rowToFirm(row: FirmRow): FirmProfile {
     status: row.status === "suspended" ? "suspended" : "active",
     legalName: row.legal_name,
     shortName: row.short_name,
+    dbaName: row.dba_name ?? null,
+    entityType: row.entity_type ?? null,
+    employeeRange: row.employee_range ?? null,
     uei: row.uei,
     cage: row.cage,
     duns: row.duns,
@@ -47,6 +52,8 @@ export function rowToFirm(row: FirmRow): FirmProfile {
     assistantName: row.assistant_name || `${row.short_name}'s Assistant`,
     allowedEmailDomains: row.allowed_email_domains ?? [],
     digestRecipients: row.digest_recipients ?? [],
+    workspace: { ...DEFAULT_WORKSPACE, ...((row.workspace ?? {}) as Partial<WorkspaceSettings>) },
+    onboardedAt: row.onboarded_at ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -80,6 +87,10 @@ function inputToRow(input: ValidFirmInput) {
     assistant_name: input.assistantName,
     allowed_email_domains: input.allowedEmailDomains,
     digest_recipients: input.digestRecipients,
+    dba_name: input.dbaName,
+    entity_type: input.entityType,
+    employee_range: input.employeeRange,
+    workspace: input.workspace as unknown as Json,
   };
 }
 
@@ -155,6 +166,7 @@ export interface FirmMembership {
   firmId: string;
   email: string;
   role: FirmRole;
+  userId: string | null;
 }
 
 export interface FirmMemberRow {
@@ -168,14 +180,24 @@ export interface FirmMemberRow {
 export async function listMembershipsForEmail(email: string): Promise<FirmMembership[]> {
   const { data, error } = await getSupabaseAdmin()
     .from("firm_members")
-    .select("firm_id, email, role")
+    .select("firm_id, email, role, user_id")
     .eq("email", email.toLowerCase());
   if (error) throw new Error(error.message);
   return (data ?? []).map((r) => ({
     firmId: r.firm_id,
     email: r.email,
     role: r.role as FirmRole,
+    userId: r.user_id,
   }));
+}
+
+/** Record the auth user id on memberships the first time the user signs in. */
+export async function linkMembershipsToUser(email: string, userId: string) {
+  await getSupabaseAdmin()
+    .from("firm_members")
+    .update({ user_id: userId })
+    .eq("email", email.toLowerCase())
+    .is("user_id", null);
 }
 
 /** Firms whose allowed_email_domains include the user's domain (auto-join as member). */

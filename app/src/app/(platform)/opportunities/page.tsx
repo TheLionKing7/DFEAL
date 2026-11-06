@@ -1,117 +1,32 @@
 import { PageHeader, PageShell, Panel } from "@/components/layout/PageShell";
 import { OpportunityCard } from "@/components/opportunity/OpportunityCard";
 import type { OpportunityCardData } from "@/components/opportunity/OpportunityCard";
-import { listHotOpportunities, listOpportunities } from "@/lib/db/opportunities";
+import { listLaneOpportunities } from "@/lib/db/lane-opportunities";
 import { requireFirmPage } from "@/lib/firms/context";
-import { listFederalGrantConnectorStatus } from "@/lib/grants/registry";
-import { listConnectorStatus, laneToGrantSources, laneToSledSources } from "@/lib/sled/registry";
-import {
-  laneToMarketTier,
-  OPPORTUNITY_LANES,
-  type OpportunityLaneId,
-} from "@/shared/opportunity-lanes";
+import { resolveLane, scopedStates } from "@/lib/firms/lanes";
+import { stateName } from "@/lib/firms/states";
 
 export const dynamic = "force-dynamic";
 
 export default async function OpportunitiesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ lane?: string; q?: string }>;
+  searchParams: Promise<{ lane?: string; q?: string; state?: string }>;
 }) {
   const params = await searchParams;
   const { firm } = await requireFirmPage();
-  const lane = (params.lane ?? "federal") as OpportunityLaneId;
+  const { lane, stateFilter } = resolveLane(firm, params.lane);
   const q = params.q?.trim();
-  const laneMeta = OPPORTUNITY_LANES.find((l) => l.id === lane);
+  const requestedState = (params.state ?? stateFilter)?.toUpperCase();
+  const scope = scopedStates(firm);
+  const stateOptions = lane.id === "state" || lane.id === "local" || lane.id === "education" ? scope : null;
+  const state =
+    requestedState && (scope === null || scope.includes(requestedState) || stateFilter) ? requestedState : undefined;
 
   let items: OpportunityCardData[] = [];
-  let notice: string | null = null;
   let error: string | null = null;
-
   try {
-    if (lane === "federal" && !q) {
-      const hot = await listHotOpportunities(firm.id, 50);
-      if (hot.length > 0) {
-        items = hot;
-      } else {
-        const rows = await listOpportunities({ limit: 50, source: "sam" });
-        items = rows.map((o) => ({
-          ...o,
-          fit_score: null,
-          go_no_go: null,
-          score_rationale: null,
-        }));
-      }
-    } else if (lane === "federal" && q) {
-      const rows = await listOpportunities({ limit: 50, source: "sam", q });
-      items = rows.map((o) => ({
-        ...o,
-        fit_score: null,
-        go_no_go: null,
-        score_rationale: null,
-      }));
-    } else if (lane === "grants") {
-      const sources = laneToGrantSources(lane);
-      const connectors = listFederalGrantConnectorStatus().filter((c) =>
-        sources.includes(c.id),
-      );
-      const live = connectors.filter((c) => c.status === "live");
-
-      if (live.length === 0) {
-        notice = "Grants ingest connectors are not live yet. Run POST /api/cron/ingest-grants.";
-      }
-
-      const rows = await listOpportunities({ limit: 50, sources: [...sources], q });
-      const filtered = rows.filter(
-        (r) =>
-          sources.includes(r.source as (typeof sources)[number]) &&
-          (r.source !== "sba" || r.raw_data?.funding_type === "sba_grant_program"),
-      );
-
-      if (filtered.length === 0 && live.length > 0) {
-        notice =
-          "No ingested grant opportunities yet. Trigger POST /api/cron/ingest-grants (or wait for daily cron).";
-      }
-
-      items = filtered.map((o) => ({
-        ...o,
-        fit_score: null,
-        go_no_go: null,
-        score_rationale: null,
-      }));
-    } else {
-      const sources = laneToSledSources(lane);
-      const connectors = listConnectorStatus().filter((c) => sources.includes(c.id));
-      const live = connectors.filter((c) => c.status === "live");
-
-      if (live.length === 0) {
-        notice = `${laneMeta?.label ?? lane}: ${connectors.map((c) => c.description).join(" · ")}. Run /api/cron/ingest-sled after connectors are live.`;
-      }
-
-      const rows = await listOpportunities({
-        limit: 50,
-        source: sources.length === 1 ? sources[0] : undefined,
-        marketTier: laneToMarketTier(lane),
-        q,
-      });
-
-      const filtered =
-        sources.length > 1
-          ? rows.filter((r) => sources.includes(r.source as (typeof sources)[number]))
-          : rows;
-
-      if (filtered.length === 0 && live.length > 0) {
-        notice =
-          "No ingested opportunities for this lane yet. Trigger POST /api/cron/ingest-sled (or wait for daily cron).";
-      }
-
-      items = filtered.map((o) => ({
-        ...o,
-        fit_score: null,
-        go_no_go: null,
-        score_rationale: null,
-      }));
-    }
+    items = await listLaneOpportunities(firm, lane.id, { q, state, limit: 60 });
   } catch (err) {
     error = err instanceof Error ? err.message : "Failed to load opportunities";
   }
@@ -119,38 +34,35 @@ export default async function OpportunitiesPage({
   return (
     <PageShell>
       <PageHeader
-        title={laneMeta?.label ?? "Opportunities"}
-        description={
-          laneMeta?.description ?? "Search and open opportunities in the capture workspace."
-        }
+        title={state ? `${lane.label} · ${stateName(state)}` : lane.label}
+        description={lane.description}
       />
 
-      <form className="flex gap-2">
-        <input type="hidden" name="lane" value={lane} />
+      <form className="flex flex-wrap gap-2">
+        <input type="hidden" name="lane" value={lane.id} />
         <input
           name="q"
           defaultValue={q}
           placeholder="Search title or agency…"
-          className="flex-1 rounded-lg border border-border px-3 py-2 text-sm"
+          className="min-w-[12rem] flex-1 rounded-lg border border-border px-3 py-2 text-sm"
         />
-        <button
-          type="submit"
-          className="rounded-lg bg-sidebar px-4 py-2 text-sm font-medium text-white"
-        >
+        {stateOptions && stateOptions.length > 1 && (
+          <select name="state" defaultValue={state ?? ""} className="rounded-lg border border-border px-3 py-2 text-sm">
+            <option value="">All my states</option>
+            {stateOptions.map((s) => (
+              <option key={s} value={s}>
+                {stateName(s)}
+              </option>
+            ))}
+          </select>
+        )}
+        <button type="submit" className="rounded-lg bg-sidebar px-4 py-2 text-sm font-medium text-white">
           Search
         </button>
       </form>
 
-      {notice && (
-        <p className="rounded-lg border border-gold/30 bg-gold/5 px-4 py-3 text-sm text-gold">
-          {notice}
-        </p>
-      )}
-
       {error && (
-        <p className="rounded-lg border border-error/30 bg-error/5 px-4 py-3 text-sm text-error">
-          {error}
-        </p>
+        <p className="rounded-lg border border-error/30 bg-error/5 px-4 py-3 text-sm text-error">{error}</p>
       )}
 
       <Panel title={`${items.length} results`}>
@@ -158,6 +70,12 @@ export default async function OpportunitiesPage({
           {items.map((opp) => (
             <OpportunityCard key={opp.id} opp={opp} />
           ))}
+          {items.length === 0 && !error && (
+            <p className="text-sm text-text-muted">
+              No open opportunities in this lane right now. New notices are ingested daily; widen your state scope or
+              lanes in Firm profile &amp; settings → Workspace.
+            </p>
+          )}
         </div>
       </Panel>
     </PageShell>

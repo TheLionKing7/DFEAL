@@ -82,7 +82,11 @@ export function DocumentGeneratorPanel({
       <Panel title="Smart document generator">
         <p className="mb-3 text-sm text-text-muted">
           Document types are matched to the notice type and solicitation
-          language of each opportunity. Drafts follow your firm profile and proposal templates.
+          language of each opportunity. Drafts follow your firm profile, proposal templates and your{" "}
+          <a href="/settings?tab=documents" className="text-gold hover:underline">
+            reference documents
+          </a>
+          .
         </p>
 
         {recLoading && (

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { FirmStatusButton } from "@/components/admin/FirmStatusButton";
+import { InvitationsPanel } from "@/components/admin/InvitationsPanel";
 import { OpenFirmButton } from "@/components/admin/OpenFirmButton";
 import { industryLabel } from "@/lib/firms/industries";
 import { listFirms } from "@/lib/firms/repository";
@@ -21,12 +22,14 @@ export default async function AdminFirmsPage() {
           </p>
         </div>
         <Link
-          href="/onboarding"
-          className="rounded-lg bg-sidebar px-4 py-2 text-sm font-medium text-white hover:bg-sidebar-surface"
+          href="/admin/firms/new"
+          className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:border-gold"
         >
-          + Onboard firm
+          Create workspace directly
         </Link>
       </div>
+
+      <InvitationsPanel />
 
       <div className="overflow-x-auto rounded-xl border border-border bg-bg-surface">
         <table className="w-full text-sm">
@@ -37,6 +40,7 @@ export default async function AdminFirmsPage() {
               <th className="px-4 py-3">Primary NAICS</th>
               <th className="px-4 py-3">NAICS</th>
               <th className="px-4 py-3">Home</th>
+              <th className="px-4 py-3">Onboarded</th>
               <th className="px-4 py-3">Status</th>
               <th className="px-4 py-3" />
             </tr>
@@ -58,6 +62,7 @@ export default async function AdminFirmsPage() {
                 </td>
                 <td className="px-4 py-3 text-xs">{f.naicsCodes.join(", ")}</td>
                 <td className="px-4 py-3">{f.homeState ?? "—"}</td>
+                <td className="px-4 py-3 text-xs">{f.onboardedAt ? new Date(f.onboardedAt).toLocaleDateString() : "—"}</td>
                 <td className="px-4 py-3">
                   <span className={f.status === "active" ? "text-success" : "text-error"}>{f.status}</span>
                 </td>
@@ -69,8 +74,8 @@ export default async function AdminFirmsPage() {
             ))}
             {firms.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-4 py-10 text-center text-text-muted">
-                  No firms yet. Run the migrations, then onboard your first firm.
+                <td colSpan={8} className="px-4 py-10 text-center text-text-muted">
+                  No firms yet. Send an invitation above.
                 </td>
               </tr>
             )}

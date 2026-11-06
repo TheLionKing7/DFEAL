@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { isDatabaseConfigured } from "@/lib/db/supabase-admin";
 import { isPlatformAdminEmail } from "@/lib/firms/context";
 import { findFirmsByEmailDomain, listMembershipsForEmail } from "@/lib/firms/repository";
+import { getPendingInvitation } from "@/lib/onboarding/invitations";
 import { badRequest, readJson } from "@/lib/http/json";
 import { rateLimit } from "@/lib/http/rate-limit";
 import { logger } from "@/lib/logger";
@@ -16,15 +17,16 @@ function selfSignupEnabled() {
   return process.env.ALLOW_SELF_SIGNUP === "1";
 }
 
-/** Only users attached to a firm (or eligible to be) may receive a sign-in link. */
+/** Only firm members, auto-join domains, invited prospects and platform admins receive a sign-in link. */
 async function isEligible(email: string): Promise<boolean> {
   if (isPlatformAdminEmail(email) || selfSignupEnabled()) return true;
   if (!isDatabaseConfigured()) return false;
-  const [memberships, domainFirms] = await Promise.all([
+  const [memberships, domainFirms, invitation] = await Promise.all([
     listMembershipsForEmail(email),
     findFirmsByEmailDomain(email),
+    getPendingInvitation(email),
   ]);
-  return memberships.length > 0 || domainFirms.length > 0;
+  return memberships.length > 0 || domainFirms.length > 0 || Boolean(invitation);
 }
 
 export async function POST(request: NextRequest) {

@@ -8,6 +8,7 @@ import { dedupeHotOpportunityRows, dedupeOpportunityCards } from "@/lib/opportun
 import { scoreOpportunity } from "@/lib/scoring/score-opportunity";
 import type { OpportunityCardData } from "@/components/opportunity/OpportunityCard";
 import type { FirmProfile } from "@/lib/firms/types";
+import { scopedStates } from "@/lib/firms/lanes";
 
 export interface ExploreLane {
   id: string;
@@ -98,44 +99,42 @@ export async function loadExplorePageData(firm: FirmProfile) {
 
   const featured = recommended.slice(0, 5);
 
-  const [{ data: federalRows }, { data: stateRows }, { data: grantRows }] =
-    await Promise.all([
-      supabase
-        .from("opportunities")
-        .select("*")
-        .eq("status", "active")
-        .eq("source", "sam")
-        .or(freshnessOrFilter())
-        .order("posted_date", { ascending: false, nullsFirst: false })
-        .order("updated_at", { ascending: false })
-        .limit(40),
-      supabase
-        .from("opportunities")
-        .select("*")
-        .eq("status", "active")
-        .in("source", [
-          "bidbuy_il",
-          "georgia",
-          "ohio",
-          "bonfire",
-          "stateuniv_il",
-          "education_il",
-          "demandstar",
-        ])
-        .or(freshnessOrFilter())
-        .order("posted_date", { ascending: false, nullsFirst: false })
-        .order("updated_at", { ascending: false })
-        .limit(40),
-      supabase
-        .from("opportunities")
-        .select("*")
-        .eq("status", "active")
-        .in("source", ["grants_gov", "sba"])
-        .or(freshnessOrFilter())
-        .order("posted_date", { ascending: false, nullsFirst: false })
-        .order("updated_at", { ascending: false })
-        .limit(40),
-    ]);
+  const states = scopedStates(firm);
+  let stateQuery = supabase
+    .from("opportunities")
+    .select("*")
+    .eq("status", "active")
+    .neq("source", "sam")
+    .in("market_tier", ["state", "local", "education"])
+    .or(freshnessOrFilter())
+    .order("posted_date", { ascending: false, nullsFirst: false })
+    .order("updated_at", { ascending: false })
+    .limit(60);
+  if (states !== null) stateQuery = stateQuery.in("place_of_performance->>state", states.length ? states : ["__none__"]);
+
+  const [{ data: federalRows }, { data: stateRows }, { data: grantRows }] = await Promise.all([
+    supabase
+      .from("opportunities")
+      .select("*")
+      .eq("status", "active")
+      .eq("source", "sam")
+      .or(freshnessOrFilter())
+      .order("posted_date", { ascending: false, nullsFirst: false })
+      .order("updated_at", { ascending: false })
+      .limit(40),
+    stateQuery,
+    firm.workspace.grants
+      ? supabase
+          .from("opportunities")
+          .select("*")
+          .eq("status", "active")
+          .in("source", ["grants_gov", "sba"])
+          .or(freshnessOrFilter())
+          .order("posted_date", { ascending: false, nullsFirst: false })
+          .order("updated_at", { ascending: false })
+          .limit(40)
+      : Promise.resolve({ data: [] as never[] }),
+  ]);
 
   const federalItems = dedupeOpportunityCards(
     (federalRows ?? [])
@@ -174,7 +173,7 @@ export async function loadExplorePageData(firm: FirmProfile) {
     {
       id: "state",
       label: "State & Local Contract Opportunities",
-      href: "/opportunities?lane=state",
+      href: firm.homeState ? "/opportunities?lane=home" : "/opportunities?lane=state",
       items: stateLocalItems,
     },
     {
@@ -185,10 +184,12 @@ export async function loadExplorePageData(firm: FirmProfile) {
     },
   ];
 
+  const visibleLanes = popularLanes.filter((l) => l.id !== "grants" || firm.workspace.grants);
+
   return {
     featured,
     recommended,
-    popularLanes,
+    popularLanes: visibleLanes,
     industryEvents: events.slice(0, 6),
   };
 }

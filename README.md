@@ -42,9 +42,22 @@ npm install && npm run dev
 
 **From the CLI.** `cd app && npm run firm:onboard -- ../supabase/seed/example-firm.json owner@firm.com`
 
-**Self-serve.** Set `ALLOW_SELF_SIGNUP=1` and any signed-in user without a firm is sent to `/onboarding` to create their own.
+**Invite-only self-onboarding (default).** Platform admin → **Firms → Invite a firm** (email + company name). The invitee gets a sign-in link (`/login?next=/onboarding&email=…`) and runs the six-step wizard: *About you → Your business → Capabilities & NAICS → Workspace setup → Team & notifications → Review*. They become the firm's owner, teammates are invited, the pool is scored, and they land on **Settings → Reference documents**. `ALLOW_SELF_SIGNUP=1` opens the wizard to anyone.
 
-Firm admins manage their profile, NAICS, scoring rules and team under **Firm profile & settings**. Saving re-scores the feed.
+**Workspace lanes.** Federal (SAM.gov) is always on. Each firm picks a **home state** (required), state coverage (`all` states / `selected` states / home only), and toggles Local, Education and Grants. The sidebar, explore page, briefing and automations all follow these settings (`src/lib/firms/lanes.ts`).
+
+Firm admins manage profile, NAICS, workspace lanes, reference documents, team (roles, invites), notifications and integrations under **Firm profile & settings**. Saving re-scores the feed.
+
+### Reference documents
+
+Every workspace uploads its own capability statements, past proposals, RFI / sources-sought responses, past performance write-ups, resumes, style guides and templates (**Settings → Reference documents**; PDF, DOCX, TXT, MD up to 25 MB, or pasted text). Files go to the private `firm-files` Storage bucket via signed upload URLs; text is extracted server-side and the most relevant documents for each document type are injected into the drafting prompt (`src/lib/documents/reference.ts`). The assistant also sees the catalogue.
+
+### Assistant, briefing & automations
+
+- **Assistant** — floating bottom-right widget (⌘/Ctrl K) with chat history dropdown (search), New chat, Daily briefing and Automations. Settings: **Memories** (persistent workflows / task & opportunity status / operating guidelines; the assistant saves new ones itself), **Custom instructions** (for automation agents), **Personalization** (the user's mental model), **Connectors**.
+- **Daily briefing** — one stored per firm per day (`daily_briefings`), AI industry pulse, emailed with the digest.
+- **Automations** — agents with filters (lanes, states, NAICS, keywords, agencies, set-asides, notice types, min fit), optional AI triage using memories + instructions, and actions (email, Slack/Teams/Zapier/webhook, Gmail/Outlook, calendar events, track list, pursuits, draft documents, memory, MCP tool calls), with an optional approval inbox. Runs hourly/daily via `/api/cron/automations`.
+- **Connectors** — Email, Slack, Teams, Zapier, webhooks, MCP servers (Streamable HTTP), Google and Microsoft OAuth, and a private ICS calendar feed. Secrets are AES-256-GCM encrypted with `CONNECTOR_ENCRYPTION_KEY`; outbound URLs must be public HTTPS.
 
 ### Sign-in
 
@@ -55,9 +68,9 @@ Magic links are issued by `POST /api/auth/magic-link` only to emails that are a 
 ## Deployment
 
 1. **Migrations** — apply everything in `supabase/migrations` (`supabase db push`). `20261031000000_multi_tenant_firms.sql` creates `firms`/`firm_members`, adds `firm_id` everywhere, seeds **DFEAL** as the first firm, backfills all existing rows and users to it, and replaces the permissive RLS policies. It is idempotent.
-2. **Env vars** (Vercel) — see `app/.env.example`. New: `PLATFORM_ADMIN_EMAILS`, optional `ALLOW_SELF_SIGNUP`. Removed: `ALLOWED_EMAIL_DOMAIN`, `NEXT_PUBLIC_ALLOWED_EMAIL_DOMAIN`, `DIGEST_EMAIL_TO` (now per-firm).
+2. **Env vars** (Vercel) — see `app/.env.example`. Required: `PLATFORM_ADMIN_EMAILS`, `CONNECTOR_ENCRYPTION_KEY` (`openssl rand -base64 32`), `RESEND_API_KEY` + `RESEND_FROM_EMAIL` for email, at least one working LLM key. Optional: `ALLOW_SELF_SIGNUP`, `GOOGLE_OAUTH_CLIENT_ID/SECRET`, `MICROSOFT_OAUTH_CLIENT_ID/SECRET/TENANT`, `LLM_TIMEOUT_MS`. OAuth redirect URIs: `https://<domain>/api/connectors/oauth/google/callback` and `…/microsoft/callback`. Removed: `ALLOWED_EMAIL_DOMAIN`, `NEXT_PUBLIC_ALLOWED_EMAIL_DOMAIN`, `DIGEST_EMAIL_TO` (now per-firm).
 3. **Supabase Auth** — add `https://<your-domain>/auth/callback` to the redirect allow-list; configure SMTP so invite/magic-link emails come from your domain.
-4. **Cron** — `POST /api/cron/daily-opportunities` with `Authorization: Bearer $CRON_SECRET` once a day. It ingests, archives, scores every active firm, and emails each firm's digest.
+4. **Cron** — `POST /api/cron/daily-opportunities` with `Authorization: Bearer $CRON_SECRET` once a day (ingest, archive, score every firm, build + email each firm's briefing/digest, run daily automations), and `POST /api/cron/automations` hourly for hourly agents.
 5. **Health** — `GET /api/cron/health` is a public liveness probe; send the cron secret for full diagnostics.
 
 ## Commands (`app/`)
@@ -107,5 +120,6 @@ CI (`.github/workflows/ci.yml`) runs typecheck, lint, tests and build, and appli
 
 - SLED connectors are still Illinois/Georgia-centric; firms in other states rely on SAM, grants and DemandStar until more state portals are added.
 - Rate limiting on AI routes is per-instance (in memory); put Vercel WAF or Upstash in front for strict global limits.
-- Firm-supplied files (`client-assets/`) should move to per-firm Supabase Storage.
-- Reports pages (`/reports/*`) and the automation runner are still placeholders.
+- DFEAL's own documents in `client-assets/` can now be uploaded as its reference documents.
+- Reports pages (`/reports/*`) are still placeholders.
+- Scanned (image-only) PDFs need OCR before they are useful as reference documents.

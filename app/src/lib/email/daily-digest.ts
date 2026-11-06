@@ -23,7 +23,7 @@ export function digestRecipientsFor(firm: FirmProfile): string[] {
 
 export async function sendDailyDigestEmail(
   firm: FirmProfile,
-  options: { hotCount: number; scored: number; ingested: number },
+  options: { hotCount: number; scored: number; ingested: number; briefingPulse?: string },
 ): Promise<SendDailyDigestResult> {
   if (!isResendConfigured()) {
     return { sent: false, skipped_reason: "RESEND_API_KEY not configured" };
@@ -44,6 +44,8 @@ export async function sendDailyDigestEmail(
     ingested: options.ingested,
     exploreUrl,
     firmName: firm.legalName,
+    briefingPulse: options.briefingPulse,
+    briefingUrl: `${getSiteUrl()}/briefing`,
     opportunities: hot.map((opp) => ({
       title: opp.title,
       agency_name: opp.agency_name,
