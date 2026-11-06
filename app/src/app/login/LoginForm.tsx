@@ -17,7 +17,11 @@ export default function LoginForm() {
   const [mode, setMode] = useState<Mode>("magic");
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(
-    callbackError ? "That sign-in link is invalid or expired. Request a new one." : null,
+    callbackError === "link_other_browser"
+      ? "That link was opened in a different browser from the one that requested it. Request a new link below — new links work in any browser."
+      : callbackError
+        ? "That sign-in link has already been used or has expired. Request a new one below."
+        : null,
   );
   const [loading, setLoading] = useState(false);
 

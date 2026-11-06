@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
     const invites: { email: string; result: string }[] = [];
     for (const t of teammates.data.filter((t) => t.email !== user.email)) {
       await upsertFirmMember(created.id, t.email, t.role, user.email);
-      invites.push({ email: t.email, result: await sendAuthInvite(t.email) });
+      invites.push({ email: t.email, result: await sendAuthInvite(t.email, created.shortName) });
     }
 
     const scoring = await rescoreFirm(created.id);

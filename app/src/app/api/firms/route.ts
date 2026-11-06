@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
     const firm = await createFirm({ ...parsed.data, slug }, user.email, { email: ownerEmail });
     logger.info("firm.created", { firmId: firm.id, slug, by: user.email });
 
-    const invite = ownerEmail !== user.email ? await sendAuthInvite(ownerEmail) : "exists";
+    const invite = ownerEmail !== user.email ? await sendAuthInvite(ownerEmail, firm.shortName) : "exists";
     const scoring = await rescoreFirm(firm.id);
 
     // Drop the creator into the new workspace.

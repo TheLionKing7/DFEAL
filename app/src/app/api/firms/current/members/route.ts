@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
       return badRequest("A firm must keep at least one owner");
     }
     await upsertFirmMember(ctx.firm.id, email, role, ctx.user.email);
-    const invite = existing ? "exists" : await sendAuthInvite(email);
+    const invite = existing ? "exists" : await sendAuthInvite(email, ctx.firm.shortName);
     return NextResponse.json({ ok: true, invite, members: await membersWithNames(ctx.firm.id) });
   } catch (error) {
     return serverError("api.members.add_failed", error);

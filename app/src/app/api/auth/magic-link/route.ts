@@ -6,7 +6,8 @@ import { getPendingInvitation } from "@/lib/onboarding/invitations";
 import { badRequest, readJson } from "@/lib/http/json";
 import { rateLimit } from "@/lib/http/rate-limit";
 import { logger } from "@/lib/logger";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { sendSignInEmail } from "@/lib/auth/sign-in-link";
+import { createClient } from "@supabase/supabase-js";
 
 const GENERIC_OK = {
   ok: true,
@@ -46,15 +47,27 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(GENERIC_OK);
     }
 
-    const supabase = await createSupabaseServerClient();
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: `${request.nextUrl.origin}/auth/callback?next=${encodeURIComponent(next)}`,
-        shouldCreateUser: true,
-      },
+    // Our own one-time link (any browser, no Supabase mail rate limit).
+    const delivery = await sendSignInEmail(email, next).catch((error) => {
+      logger.warn("auth.magic_link.mint_failed", { error: error instanceof Error ? error.message : String(error) });
+      return "manual" as const;
     });
-    if (error) logger.warn("auth.magic_link.failed", { error: error.message });
+    if (delivery === "manual") {
+      // Resend unavailable: fall back to Supabase's mailer. Implicit flow puts
+      // the session in the URL fragment (finished on /auth/complete), so the
+      // link works in any browser — unlike PKCE.
+      const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+        auth: { flowType: "implicit", persistSession: false, autoRefreshToken: false },
+      });
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          emailRedirectTo: `${request.nextUrl.origin}/auth/callback?next=${encodeURIComponent(next)}`,
+          shouldCreateUser: true,
+        },
+      });
+      if (error) logger.warn("auth.magic_link.failed", { error: error.message });
+    }
   } catch (error) {
     logger.error("auth.magic_link.error", { error: error instanceof Error ? error.message : String(error) });
   }

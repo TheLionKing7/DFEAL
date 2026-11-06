@@ -1,8 +1,7 @@
 import type { FirmInvitationRow } from "@/lib/db/database.types";
 import { getSupabaseAdmin } from "@/lib/db/supabase-admin";
-import { sendPlatformEmail } from "@/lib/connectors/deliver";
+import { sendInviteEmail } from "@/lib/auth/sign-in-link";
 import { getSiteUrl } from "@/lib/env";
-import { logger } from "@/lib/logger";
 import { SMART_CAPTURE } from "@/config/platform";
 
 export type Invitation = FirmInvitationRow;
@@ -34,37 +33,15 @@ export async function listInvitations(): Promise<Invitation[]> {
   return data ?? [];
 }
 
-async function deliverInvite(email: string, companyName: string | null, note: string | null): Promise<"email" | "supabase" | "manual"> {
-  const link = onboardingLink(email);
-  // Prefer the Supabase invite (creates the login and emails a one-click link).
-  try {
-    const { error } = await getSupabaseAdmin().auth.admin.inviteUserByEmail(email, {
-      redirectTo: `${getSiteUrl()}/auth/callback?next=${encodeURIComponent("/onboarding")}`,
-      data: { invited_company: companyName ?? undefined },
-    });
-    if (!error) return "supabase";
-    if (!/already (been )?registered|already exists/i.test(error.message)) {
-      logger.warn("invite.supabase_failed", { error: error.message });
-    }
-  } catch (error) {
-    logger.warn("invite.supabase_failed", { error: error instanceof Error ? error.message : String(error) });
-  }
-  // Existing user (or Supabase mail unavailable): send our own email if possible.
-  try {
-    await sendPlatformEmail(
-      [email],
-      `You're invited to set up ${companyName ? `${companyName}'s` : "your"} ${SMART_CAPTURE.name} workspace`,
-      `<div style="font-family:system-ui,sans-serif;font-size:15px;line-height:1.6;color:#1a2332">
-        <p>You've been invited to ${SMART_CAPTURE.name} — AI-powered contract capture for federal, state, local and grant opportunities.</p>
-        ${note ? `<p style="padding:12px;background:#f7f6f3;border-radius:8px">${note.replace(/</g, "&lt;")}</p>` : ""}
-        <p><a href="${link}" style="display:inline-block;background:#0f2744;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:600">Set up your workspace →</a></p>
-        <p style="font-size:12px;color:#64748b">Sign in with this email address (${email}) to continue.</p>
-      </div>`,
-    );
-    return "email";
-  } catch {
-    return "manual";
-  }
+async function deliverInvite(email: string, companyName: string | null, note: string | null): Promise<"email" | "manual"> {
+  return sendInviteEmail({
+    email,
+    next: "/onboarding",
+    subject: `You're invited to set up ${companyName ? `${companyName}'s` : "your"} ${SMART_CAPTURE.name} workspace`,
+    intro: `You've been invited to ${SMART_CAPTURE.name}, AI-powered contract capture for federal, state, local, education and grant opportunities. Set up your workspace in a few minutes.`,
+    note,
+    cta: "Set up your workspace",
+  });
 }
 
 export async function createInvitation(input: {
@@ -73,7 +50,7 @@ export async function createInvitation(input: {
   note?: string | null;
   invitedBy: string;
   expiresInDays?: number;
-}): Promise<{ invitation: Invitation; delivery: "email" | "supabase" | "manual"; link: string }> {
+}): Promise<{ invitation: Invitation; delivery: "email" | "manual"; link: string }> {
   const email = input.email.trim().toLowerCase();
   const supabase = getSupabaseAdmin();
   // One pending invite per email: refresh it instead of erroring.

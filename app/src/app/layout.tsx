@@ -1,3 +1,4 @@
+import { AuthHashForwarder } from "@/components/auth/AuthHashForwarder";
 import type { Metadata } from "next";
 import { SMART_CAPTURE } from "@/config/platform";
 import "./globals.css";
@@ -14,7 +15,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="h-full antialiased">
-      <body className="min-h-full flex flex-col bg-bg text-text">{children}</body>
+      <body className="min-h-full flex flex-col bg-bg text-text">
+        <AuthHashForwarder />
+        {children}
+      </body>
     </html>
   );
 }

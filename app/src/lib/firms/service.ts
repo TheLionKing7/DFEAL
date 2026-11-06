@@ -1,6 +1,6 @@
+import { sendInviteEmail } from "@/lib/auth/sign-in-link";
+import { SMART_CAPTURE } from "@/config/platform";
 import { runScoringOnly } from "@/lib/cron/daily-pipeline";
-import { getSupabaseAdmin } from "@/lib/db/supabase-admin";
-import { getSiteUrl } from "@/lib/env";
 import { logger } from "@/lib/logger";
 
 /**
@@ -22,20 +22,19 @@ export async function rescoreFirm(firmId: string) {
 }
 
 /**
- * Create the Supabase auth user (if needed) and email an invite link.
- * Existing users simply sign in with a magic link — membership is what grants access.
+ * Email a one-click sign-in link that drops the user into the firm workspace.
+ * Membership (not the auth user) is what grants access.
  */
-export async function sendAuthInvite(email: string): Promise<"invited" | "exists" | "failed"> {
-  try {
-    const { error } = await getSupabaseAdmin().auth.admin.inviteUserByEmail(email, {
-      redirectTo: `${getSiteUrl()}/auth/callback?next=/explore`,
-    });
-    if (!error) return "invited";
-    if (/already (been )?registered|already exists/i.test(error.message)) return "exists";
-    logger.warn("firm.invite_failed", { error: error.message });
-    return "failed";
-  } catch (error) {
-    logger.warn("firm.invite_failed", { error: error instanceof Error ? error.message : String(error) });
-    return "failed";
-  }
+export async function sendAuthInvite(
+  email: string,
+  firmName?: string,
+): Promise<"invited" | "exists" | "failed"> {
+  const delivery = await sendInviteEmail({
+    email,
+    next: "/explore",
+    subject: `You've been added to ${firmName ? `${firmName} on ` : ""}${SMART_CAPTURE.name}`,
+    intro: `You've been added to ${firmName ? `the ${firmName} workspace on ` : ""}${SMART_CAPTURE.name}. Use the button below to sign in.`,
+    cta: `Open ${SMART_CAPTURE.name}`,
+  });
+  return delivery === "email" ? "invited" : "failed";
 }
